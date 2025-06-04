@@ -1,15 +1,18 @@
 package studyMate.entity;
 
-
 import com.github.f4b6a3.ulid.UlidCreator;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 @Getter
+@Setter
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -32,13 +35,13 @@ public class User {
     private Sex sex;
 
     @Column(name = "total_study_time", nullable = false)
-    private int totalStudyTime = 0; // 총 공부 시간(분)
+    private int totalStudyTime = 0;
 
     @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt; // 가입일자
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt; // 최근 접속일자
+    private LocalDateTime updatedAt;
 
     @PrePersist
     public void prePersist() {
@@ -53,7 +56,8 @@ public class User {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
     public enum Sex {
-        M, F
+        남, 여
     }
 }
