@@ -1,4 +1,4 @@
-package com.studyMate;
+package studyMate;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
