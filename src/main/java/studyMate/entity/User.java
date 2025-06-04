@@ -34,6 +34,7 @@ public class User {
     @Column(nullable = false)
     private Sex sex;
 
+    // 요약 캐시 : 갱신/재계산 로직 필요
     @Column(name = "total_study_time", nullable = false)
     private int totalStudyTime = 0;
 
