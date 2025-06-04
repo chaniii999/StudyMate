@@ -54,6 +54,6 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
     public enum Sex {
-        남, 여
+        M, F
     }
 }
