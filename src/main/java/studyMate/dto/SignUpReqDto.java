@@ -1,7 +1,15 @@
 package studyMate.dto;
 
 import jakarta.validation.constraints.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import studyMate.entity.User;
 
+@Builder
+@Getter @Setter
+@ToString
 public class SignUpReqDto {
 
     @NotBlank
@@ -18,13 +26,11 @@ public class SignUpReqDto {
     @Size(max = 15)
     private String nickname;
 
-    @Min(0)
-    @Max(150)
+    @Min(1)
+    @Max(100)
     private Integer age;
 
     @NotNull
     @Pattern(regexp = "남|여", message = "성별은 '남' 또는 '여' 중 하나여야 합니다.")
-    private String sex;
-
-    // Getter/Setter
+    private User.Sex sex;
 }
