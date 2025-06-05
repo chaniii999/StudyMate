@@ -1,10 +1,16 @@
 package studyMate.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.f4b6a3.ulid.UlidCreator;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "study_topics")
 public class StudyTopic {
@@ -15,6 +21,8 @@ public class StudyTopic {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore // Jackson 순환 참조 방지 (선택)
+    @ToString.Exclude // lombok 순환 방지 (선택)
     private User user;
 
     @Column(length = 50, nullable = false)
@@ -29,10 +37,12 @@ public class StudyTopic {
     @Column(name = "total_study_count", nullable = false)
     private int totalStudyCount = 0; // 공부한 횟수
 
-    @Column(length = 500)
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String strategy; // 공부 전략 or 프롬프트
 
-    @Column(length = 1000)
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String summary; // AI 요약
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -41,6 +41,7 @@ public class User {
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
+    // 최근 접속일자
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
