@@ -17,11 +17,6 @@ public class UserService {
 
     @Transactional
     public void registerUser(SignUpReqDto signUpReqDto) {
-        // 이메일 중복 확인
-        if (userRepository.existsByEmail(signUpReqDto.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(signUpReqDto.getPassword());
 
@@ -37,4 +32,10 @@ public class UserService {
         // 사용자 저장
         userRepository.save(user);
     }
+
+
+
+
+
+
 }
