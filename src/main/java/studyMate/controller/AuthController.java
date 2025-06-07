@@ -25,9 +25,20 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse(true, "User registered successfully!"));
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse> sendCode(@RequestParam String email) {
+    @PostMapping("/send-code")
+    public ResponseEntity<ApiResponse> sendCode(@RequestBody String email) {
         authService.sendCode(email);
         return ResponseEntity.ok(new ApiResponse(true, "Verification code sent to " + email));
     }
+
+    @PostMapping("/verify-code")
+    public ResponseEntity<ApiResponse> verifyCode(@RequestBody String email, @RequestBody String code) {
+        try {
+            authService.verifyCode(email, code);
+            return ResponseEntity.ok(new ApiResponse(true, "Verification successful!"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage()));
+        }
+    }
+
 }

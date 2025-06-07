@@ -1,6 +1,7 @@
 package studyMate.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final JavaMailSender mailSender;
@@ -21,8 +23,11 @@ public class AuthService {
     private static final long CODE_TTL_MINUTES = 3; // 인증코드 유효 시간 (3분)
 
     private boolean isValidEmail(String email) {
-        return isValidEmailFormat(email) && !userRepository.existsByEmail(email);
+        boolean formatOk = isValidEmailFormat(email);
+        boolean notExists = !userRepository.existsByEmail(email);
+        return formatOk && notExists;
     }
+
 
     // 이메일 인증 코드 발송
     public void sendCode(String email) {
@@ -31,7 +36,6 @@ public class AuthService {
         }
 
         String code = UUID.randomUUID().toString().substring(0, 6); // 랜덤 6자리 코드
-
         // Redis에 인증 코드 저장 (TTL 설정)
         redisTemplate.opsForValue().set("email:code:" + email, code, CODE_TTL_MINUTES, TimeUnit.MINUTES);
 
@@ -39,18 +43,20 @@ public class AuthService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("[StudyMate] 이메일 인증 코드");
-        message.setText("인증 코드: " + code);
+        message.setText("인증 코드: " + code + "\n이 코드는 " + CODE_TTL_MINUTES + "분 동안 유효합니다.");
         mailSender.send(message);
     }
 
-    // 이메일 인증 코드 검증
-    public boolean verifyCode(String email, String inputCode) {
+    public void verifyCode(String email, String inputCode) {
         String storedCode = redisTemplate.opsForValue().get("email:code:" + email);
-        return storedCode != null && storedCode.equals(inputCode);
+        if (storedCode == null || !storedCode.equals(inputCode)) {
+            throw new IllegalArgumentException("인증 코드가 일치하지 않거나 만료되었습니다.");
+        }
     }
 
-    // 이메일 정규식 검사
+
     private boolean isValidEmailFormat(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+        return email != null && email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$");
     }
+
 }
