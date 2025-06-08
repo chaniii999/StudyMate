@@ -1,11 +1,20 @@
 package studyMate.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-
+@Getter
+@Setter
 @AllArgsConstructor
-public class ApiResponse {
+public class ApiResponse<T> {
     private boolean success;
     private String message;
+    private T data;
+
+    public ApiResponse(boolean success, String message) {
+        this.success = success;
+        this.message = message;
+        this.data = null;
+    }
 }
