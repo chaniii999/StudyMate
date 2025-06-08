@@ -18,7 +18,7 @@ public class AuthController {
     private UserService userService;
     private AuthService authService;
 
-    @PostMapping("/signup")
+    @PostMapping("/sign-up")
     public ApiResponse<?> signUp(@Valid @RequestBody SignUpReqDto signUpReqDto) {
         userService.registerUser(signUpReqDto);
         return new ApiResponse<>(true, "User registered successfully!");

@@ -29,9 +29,8 @@ public class User {
 
     private Integer age;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Sex sex;
+    private String sex;
 
     // 요약 캐시 : 갱신/재계산 로직 필요
     @Column(name = "total_study_time", nullable = false)
@@ -58,7 +57,4 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public enum Sex {
-        남, 여
-    }
 }

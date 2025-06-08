@@ -38,7 +38,7 @@ public class AuthService {
         String code = UUID.randomUUID().toString().substring(0, 6); // 랜덤 6자리 코드
         // Redis에 인증 코드 저장 (TTL 설정)
         redisTemplate.opsForValue().set("email:code:" + email, code, CODE_TTL_MINUTES, TimeUnit.MINUTES);
-
+        log.info("이메일 인증 코드 생성: {} -> {}", email, code);
         // 이메일 전송
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);

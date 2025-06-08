@@ -30,7 +30,7 @@ public class SignUpReqDto {
     @Max(100)
     private Integer age;
 
-    @NotNull
+    @NotBlank
     @Pattern(regexp = "남|여", message = "성별은 '남' 또는 '여' 중 하나여야 합니다.")
-    private User.Sex sex;
+    private String sex;
 }
