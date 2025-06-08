@@ -1,4 +1,4 @@
-package studyMate.dto;
+package studyMate.dto.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
