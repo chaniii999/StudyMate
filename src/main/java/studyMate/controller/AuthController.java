@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import studyMate.dto.ApiResponse;
+import studyMate.dto.SignInReq;
+import studyMate.dto.TokenDto;
 import studyMate.dto.auth.SendCodeDto;
 import studyMate.dto.auth.SignUpReqDto;
 import studyMate.dto.auth.VerifyCodeDto;
@@ -17,6 +19,12 @@ public class AuthController {
 
     private UserService userService;
     private AuthService authService;
+
+    @PostMapping("/sign-in")
+    public ApiResponse<?> signIn(@Valid @RequestBody SignInReq signInReq) {
+        TokenDto tokenDto = userService.login(signInReq);
+        return new ApiResponse<>(true, "User registered successfully!", tokenDto);
+    }
 
     @PostMapping("/sign-up")
     public ApiResponse<?> signUp(@Valid @RequestBody SignUpReqDto signUpReqDto) {
