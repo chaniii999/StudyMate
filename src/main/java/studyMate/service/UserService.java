@@ -1,11 +1,16 @@
 package studyMate.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import studyMate.dto.SignInReq;
+import studyMate.dto.TokenDto;
 import studyMate.dto.auth.SignUpReqDto;
+import studyMate.entity.RefreshToken;
 import studyMate.entity.User;
+import studyMate.repository.RefreshTokenRepository;
 import studyMate.repository.UserRepository;
 
 @Service
@@ -13,8 +18,10 @@ import studyMate.repository.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public void registerUser(SignUpReqDto signUpReqDto) {
@@ -39,9 +46,35 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public TokenDto login(@Valid SignInReq signInReq) {
+        // 사용자 검증
+        User user = userRepository.findByEmail(signInReq.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        
+        if (!passwordEncoder.matches(signInReq.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
 
+        // Access Token 생성
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
+        
+        // Refresh Token 생성
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
 
+        // RefreshToken 저장
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .key(user.getEmail())
+                .value(refreshToken)
+                .build();
+        
+        refreshTokenRepository.save(refreshTokenEntity);
 
-
-
+        return TokenDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .accessTokenExpiresIn(jwtTokenProvider.getAccessTokenExpirationTime())
+                .build();
+    }
 }
