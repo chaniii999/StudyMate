@@ -46,28 +46,27 @@ public class UserService {
         userRepository.save(user);
     }
 
+
     @Transactional
     public TokenDto login(@Valid SignInReq signInReq) {
-        // 사용자 검증
         User user = userRepository.findByEmail(signInReq.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-        
+                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
+
         if (!passwordEncoder.matches(signInReq.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        // Access Token 생성
         String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        
-        // Refresh Token 생성
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
 
-        // RefreshToken 저장
+        refreshTokenRepository.findByKey(user.getEmail())
+                .ifPresent(refreshTokenRepository::delete);
+
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                 .key(user.getEmail())
                 .value(refreshToken)
                 .build();
-        
+
         refreshTokenRepository.save(refreshTokenEntity);
 
         return TokenDto.builder()
@@ -77,4 +76,5 @@ public class UserService {
                 .accessTokenExpiresIn(jwtTokenProvider.getAccessTokenExpirationTime())
                 .build();
     }
+
 }

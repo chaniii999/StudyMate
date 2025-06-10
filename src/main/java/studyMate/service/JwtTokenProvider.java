@@ -1,5 +1,6 @@
 package studyMate.service;
 
+import jakarta.annotation.PostConstruct;
 import studyMate.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -18,6 +19,12 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
+
+    @PostConstruct
+    public void checkProperties() {
+        System.out.println(">> JWT Secret Key: " + jwtProperties.getSecretKey());
+    }
+
 
     private Key getSigningKey() {
         byte[] keyBytes = jwtProperties.getSecretKey().getBytes();

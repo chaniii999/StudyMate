@@ -1,10 +1,13 @@
 package studyMate.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.f4b6a3.ulid.UlidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Builder
 @Getter @Setter
@@ -36,6 +39,11 @@ public class User {
     @Column(name = "total_study_time", nullable = false)
     private int totalStudyTime = 0;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @ToString.Exclude
+    private List<StudyTopic> studyTopics = new ArrayList<>();
+
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
@@ -57,4 +65,14 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // 연관관계 편의 메서드
+    public void addStudyTopic(StudyTopic studyTopic) {
+        this.studyTopics.add(studyTopic);
+        studyTopic.setUser(this);
+    }
+
+    public void removeStudyTopic(StudyTopic studyTopic) {
+        this.studyTopics.remove(studyTopic);
+        studyTopic.setUser(null);
+    }
 }
