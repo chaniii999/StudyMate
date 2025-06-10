@@ -5,6 +5,7 @@ import studyMate.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -14,6 +15,7 @@ import java.security.Key;
 import java.util.Collections;
 import java.util.Date;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -21,10 +23,16 @@ public class JwtTokenProvider {
     private final JwtProperties jwtProperties;
 
     @PostConstruct
-    public void checkProperties() {
-        System.out.println(">> JWT Secret Key: " + jwtProperties.getSecretKey());
+    public void init() {
+        log.info("JWT Properties loaded - Secret Key length: {}", 
+                jwtProperties.getSecretKey() != null ? jwtProperties.getSecretKey().length() : "null");
+        log.info("Access Token Validity: {} seconds", jwtProperties.getAccessTokenValidityInSeconds());
+        log.info("Refresh Token Validity: {} seconds", jwtProperties.getRefreshTokenValidityInSeconds());
+        
+        if (jwtProperties.getSecretKey() == null) {
+            throw new IllegalStateException("JWT secret key is not configured properly");
+        }
     }
-
 
     private Key getSigningKey() {
         byte[] keyBytes = jwtProperties.getSecretKey().getBytes();
