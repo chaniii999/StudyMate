@@ -28,8 +28,7 @@ public class TimerWebSocketController {
                     .build();
         }
         
-        //return timerService.startTimer(user, dto);
-        return null;
+        return timerService.startTimer(user, dto);
     }
 
     @MessageMapping("/timer/stop")
@@ -43,8 +42,7 @@ public class TimerWebSocketController {
                     .build();
         }
         
-        //return timerService.stopTimer(user);
-        return null;
+        return timerService.stopTimer(user);
     }
 
     @MessageMapping("/timer/pause")
@@ -58,7 +56,20 @@ public class TimerWebSocketController {
                     .build();
         }
         
-        //return timerService.pauseTimer(user);
-        return null;
+        return timerService.pauseTimer(user);
+    }
+
+    @MessageMapping("/timer/switch")
+    @SendTo("/topic/timer")
+    public TimerResDto switchTimer(SimpMessageHeaderAccessor headerAccessor) {
+        User user = (User) headerAccessor.getSessionAttributes().get("user");
+        if (user == null) {
+            return TimerResDto.builder()
+                    .success(false)
+                    .message("인증 정보가 없습니다.")
+                    .build();
+        }
+        
+        return timerService.switchTimer(user);
     }
 } 
