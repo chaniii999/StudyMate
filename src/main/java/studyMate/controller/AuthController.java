@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import studyMate.dto.ApiResponse;
 import studyMate.dto.SignInReq;
 import studyMate.dto.TokenDto;
+import studyMate.dto.auth.RefreshTokenRequest;
 import studyMate.dto.auth.SendCodeDto;
 import studyMate.dto.auth.SignUpReqDto;
 import studyMate.dto.auth.VerifyCodeDto;
@@ -42,5 +43,11 @@ public class AuthController {
     public ApiResponse<?> verifyCode(@RequestBody VerifyCodeDto dto) {
         authService.verifyCode(dto.getEmail(), dto.getCode());
         return new ApiResponse<>(true, "Verification successful!");
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        TokenDto tokenDto = authService.refreshToken(request.getRefreshToken());
+        return new ApiResponse<>(true, "Token refreshed successfully", tokenDto);
     }
 }
