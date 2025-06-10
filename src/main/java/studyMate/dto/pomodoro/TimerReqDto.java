@@ -7,6 +7,6 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class PomodoroStartReqDto {
+public class TimerReqDto {
     private String mode; // 50/10등
 }

@@ -2,6 +2,8 @@ package studyMate.service;
 
 import jakarta.annotation.PostConstruct;
 import studyMate.config.JwtProperties;
+import studyMate.entity.User;
+import studyMate.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -21,6 +25,7 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
+    private final UserRepository userRepository;
 
     @PostConstruct
     public void init() {
@@ -40,12 +45,20 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(String email) {
-        Claims claims = Jwts.claims().setSubject(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", user.getId());
+        claims.put("email", user.getEmail());
+        claims.put("nickname", user.getNickname());
+
         Date now = new Date();
         Date validity = new Date(now.getTime() + jwtProperties.getAccessTokenValidityInSeconds() * 1000);
 
         return Jwts.builder()
                 .setClaims(claims)
+                .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -97,4 +110,22 @@ public class JwtTokenProvider {
     public long getRefreshTokenExpirationTime() {
         return jwtProperties.getRefreshTokenValidityInSeconds();
     }
-} 
+
+    public Map<String, Object> getClaimsFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public String getEmailFromToken(String token) {
+        try {
+            return (String) getClaimsFromToken(token).get("email");
+        } catch (Exception e) {
+            log.error("Error while extracting email from token", e);
+            return null;
+        }
+    }
+
+}
