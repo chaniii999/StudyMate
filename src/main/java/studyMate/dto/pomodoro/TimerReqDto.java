@@ -2,11 +2,12 @@ package studyMate.dto.pomodoro;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
 public class TimerReqDto {
-    private String mode; // 50/10등
+    private int studyMinutes;  // 공부 시간(분)
+    private int breakMinutes;  // 휴식 시간(분)
+    private String topicId;    // 학습 주제 ID (선택)
+    private String timerType;  // "STUDY" 또는 "BREAK"
 }
