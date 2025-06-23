@@ -79,7 +79,9 @@ public class JwtTokenProvider {
 
     public Authentication getAuthentication(String token) {
         String email = getUsername(token);
-        return new UsernamePasswordAuthenticationToken(email, "", Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+        return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
     }
 
     public String getUsername(String token) {

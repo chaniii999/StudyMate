@@ -7,10 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 import studyMate.dto.pomodoro.TimerReqDto;
 import studyMate.dto.pomodoro.TimerResDto;
 import studyMate.entity.User;
+import studyMate.entity.Timer;
 import studyMate.repository.UserRepository;
+import studyMate.repository.TimerRepository;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -18,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TimerService {
 
     private final UserRepository userRepository;
+    private final TimerRepository timerRepository;
     
     // 사용자별 타이머 상태를 저장하는 맵
     private final Map<String, TimerStatus> userTimerStatus = new ConcurrentHashMap<>();
@@ -79,6 +83,20 @@ public class TimerService {
         return buildTimerResponse(true, 
             status.isStudyMode() ? "학습 타이머가 시작되었습니다." : "휴식 타이머가 시작되었습니다.",
             status, user);
+    }
+
+    @Transactional
+    public Timer saveTimerRecord(User user, int studyMinutes, int restMinutes, LocalDateTime startTime, LocalDateTime endTime, String mode, String summary) {
+        Timer timer = Timer.builder()
+                .user(user)
+                .studyMinutes(studyMinutes)
+                .restMinutes(restMinutes)
+                .startTime(startTime)
+                .endTime(endTime)
+                .mode(mode)
+                .summary(summary)
+                .build();
+        return timerRepository.save(timer);
     }
 
     private TimerResDto buildErrorResponse(String message) {
