@@ -31,11 +31,11 @@ public class Timer {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(name = "study_minutes", nullable = false)
-    private int studyMinutes;
+    @Column(name = "study_times", nullable = false)
+    private int studyTime;
 
-    @Column(name = "rest_minutes", nullable = false)
-    private int restMinutes;
+    @Column(name = "rest_times", nullable = false)
+    private int restTime;
 
     @Column(length = 20)
     private String mode; // 예: "25/5", "50/10"

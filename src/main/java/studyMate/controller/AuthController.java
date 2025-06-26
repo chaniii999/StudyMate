@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import studyMate.dto.ApiResponse;
-import studyMate.dto.SignInReq;
+import studyMate.dto.auth.SignInReq;
 import studyMate.dto.TokenDto;
 import studyMate.dto.auth.LoginResponseDto;
 import studyMate.dto.auth.RefreshTokenRequest;

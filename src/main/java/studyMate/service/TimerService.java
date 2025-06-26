@@ -32,7 +32,7 @@ public class TimerService {
         
         // 현재 사용자의 타이머 상태 저장 또는 업데이트
         TimerStatus status = userTimerStatus.getOrDefault(user.getId(), 
-            new TimerStatus(dto.getStudyMinutes(), dto.getBreakMinutes()));
+            new TimerStatus(dto.getStudyTimes(), dto.getBreakTimes()));
         
         status.setStatus("STARTED");
         status.setTimerType(timerType);
@@ -89,8 +89,8 @@ public class TimerService {
     public Timer saveTimerRecord(User user, int studyMinutes, int restMinutes, LocalDateTime startTime, LocalDateTime endTime, String mode, String summary) {
         Timer timer = Timer.builder()
                 .user(user)
-                .studyMinutes(studyMinutes)
-                .restMinutes(restMinutes)
+                .studyTime(studyMinutes)
+                .restTime(restMinutes)
                 .startTime(startTime)
                 .endTime(endTime)
                 .mode(mode)
@@ -116,8 +116,8 @@ public class TimerService {
                 .remainingTime(status.calculateRemainingTime())
                 .timerType(status.getTimerType())
                 .userNickname(user.getNickname())
-                .studyMinutes(status.getStudyMinutes())
-                .breakMinutes(status.getBreakMinutes())
+                .studyTimes(status.getStudyMinutes())
+                .breakTiems(status.getBreakMinutes())
                 .cycleCount(status.getCycleCount())
                 .build();
     }

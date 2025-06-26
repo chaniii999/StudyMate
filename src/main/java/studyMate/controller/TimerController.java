@@ -8,7 +8,7 @@ import studyMate.entity.User;
 import studyMate.service.TimerService;
 import studyMate.entity.Timer;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import org.springframework.http.ResponseEntity;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,8 +40,8 @@ public class TimerController {
         }
         Timer timer = timerService.saveTimerRecord(
                 user,
-                request.getStudyMinutes(),
-                request.getRestMinutes(),
+                request.getStudyTimes(),
+                request.getRestTimes(),
                 request.getStartTime(),
                 request.getEndTime(),
                 request.getMode(),
@@ -53,8 +53,8 @@ public class TimerController {
     // 타이머 기록 저장용 DTO
     @Getter @Setter
     public static class TimerSaveRequest {
-        private int studyMinutes;
-        private int restMinutes;
+        private int studyTimes;
+        private int restTimes;
         private LocalDateTime startTime;
         private LocalDateTime endTime;
         private String mode;
