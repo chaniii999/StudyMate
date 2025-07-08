@@ -44,6 +44,21 @@ public class Timer {
     @Column(columnDefinition = "TEXT")
     private String summary; // AI 요약
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String aiFeedback; // AI 피드백
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String aiSuggestions; // AI 개선 제안
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String aiMotivation; // AI 동기부여 메시지
+
+    @Column(name = "ai_feedback_created_at")
+    private LocalDateTime aiFeedbackCreatedAt; // AI 피드백 생성 시간
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
