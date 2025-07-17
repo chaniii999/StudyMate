@@ -7,10 +7,12 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.HttpHeaders;
 
+import studyMate.config.OpenAiProperties;
+
 @Configuration
 @RequiredArgsConstructor
 public class WebClientConfig {
-    private final OpenAiProrperties openAiProrperties;
+    private final OpenAiProperties openAiProrperties;
 
     @Bean
     public WebClient openAiWebClient() {

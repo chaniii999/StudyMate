@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import studyMate.config.OpenAiProrperties;
+import studyMate.config.OpenAiProperties;
 import studyMate.dto.ai.*;
 import studyMate.entity.Timer;
 import studyMate.repository.TimerRepository;
@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiFeedbackService {
     private final WebClient openAiWebClient;
-    private final OpenAiProrperties openAiProrperties;
+    private final OpenAiProperties openAiProrperties;
     private final TimerRepository timerRepository;
 
     public AiFeedbackResponse getFeedback(AiFeedbackRequest request) {
