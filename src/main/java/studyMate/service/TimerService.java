@@ -117,7 +117,7 @@ public class TimerService {
                 .timerType(status.getTimerType())
                 .userNickname(user.getNickname())
                 .studyTimes(status.getStudyMinutes())
-                .breakTiems(status.getBreakMinutes())
+                .breakTimes(status.getBreakMinutes())
                 .cycleCount(status.getCycleCount())
                 .build();
     }
