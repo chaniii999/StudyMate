@@ -13,6 +13,6 @@ public class TimerResDto {
     private String timerType;   // STUDY 또는 BREAK
     private String userNickname;
     private int studyTimes;   //  공부한 시간
-    private int breakTiems;   // 휴식한 시간
+    private int breakTimes;   // 휴식한 시간
     private int cycleCount;     // 현재 사이클 수
 } 
