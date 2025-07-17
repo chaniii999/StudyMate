@@ -8,6 +8,6 @@ import org.springframework.context.annotation.Configuration;
 @Getter @Setter
 @Configuration
 @ConfigurationProperties(prefix = "openai")
-public class OpenAiProrperties {
+public class OpenAiProperties {
     private String apikey;
 }
