@@ -1,3 +1,4 @@
+
 # StudyMate
 
 StudyMate는 Pomodoro 타이머와 AI 기반 피드백을 제공하는 학습 관리 앱입니다. JWT와 이메일 인증으로 안전하게 로그인하고, 타이머 기록을 바탕으로 개인별 통계를 만들어 줍니다.
@@ -16,10 +17,3 @@ StudyMate는 Pomodoro 타이머와 AI 기반 피드백을 제공하는 학습 �
 - OpenAI API
 - Lombok
 
-## 빌드 및 테스트
-
-```bash
-./gradlew test
-```
-
-Gradle을 사용해 JUnit 테스트를 실행할 수 있습니다.
