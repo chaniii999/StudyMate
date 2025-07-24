@@ -30,10 +30,6 @@ StudyMate는 Pomodoro 타이머와 AI 기반 피드백을 제공하는 학습 �
 <img width="381" height="809" alt="133" src="https://github.com/user-attachments/assets/28e4a8dc-dc94-4b4e-a34b-0514ac59620e" />
 
 
-![타이머 화면](images/timer.png)
-![설문 화면](images/survey.png)
-![피드백 화면](images/feedback.png)
-
 ## 빌드 및 테스트
 
 ```bash
