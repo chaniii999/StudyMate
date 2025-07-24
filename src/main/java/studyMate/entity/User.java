@@ -40,11 +40,13 @@ public class User implements UserDetails {
 
     // 요약 캐시 : 갱신/재계산 로직 필요
     @Column(name = "total_study_time", nullable = false)
+    @Builder.Default
     private int totalStudyTime = 0;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @ToString.Exclude
+    @Builder.Default
     private List<StudyTopic> studyTopics = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false, nullable = false)

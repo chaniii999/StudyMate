@@ -130,4 +130,43 @@ public class JwtTokenProvider {
         }
     }
 
+    // 토큰 만료 시간 확인
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            return claims.getExpiration().before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return true; // 토큰이 유효하지 않으면 만료된 것으로 간주
+        }
+    }
+
+    // 토큰 만료까지 남은 시간 (초)
+    public long getTokenExpirationTime(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            Date expiration = claims.getExpiration();
+            Date now = new Date();
+            
+            return Math.max(0, (expiration.getTime() - now.getTime()) / 1000);
+        } catch (JwtException | IllegalArgumentException e) {
+            return 0;
+        }
+    }
+
+    // 토큰 갱신 (액세스 토큰이 만료되었거나 곧 만료될 때)
+    public String refreshAccessToken(String email) {
+        log.info("액세스 토큰 갱신 요청: {}", email);
+        return createAccessToken(email);
+    }
+
 }

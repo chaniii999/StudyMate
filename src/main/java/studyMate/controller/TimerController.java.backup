@@ -40,8 +40,8 @@ public class TimerController {
         }
         
         // 실제 경과 시간 계산 (초 단위)
-        int actualStudySeconds = request.getStudyTimes(); // 초 단위
-        int actualRestSeconds = request.getRestTimes();   // 초 단위
+        int actualStudySeconds = request.getStudyTimes() * 60; // 분을 초로 변환
+        int actualRestSeconds = request.getRestTimes() * 60;   // 분을 초로 변환
         
         // 클라이언트에서 정확한 시간을 제공한 경우 우선 사용
         if (request.getActualStudySeconds() != null && request.getActualRestSeconds() != null) {
@@ -70,8 +70,8 @@ public class TimerController {
         
         Timer timer = timerService.saveTimerRecord(
                 user,
-                actualStudySeconds, // 초 단위로 직접 전달
-                actualRestSeconds,  // 초 단위로 직접 전달
+                actualStudySeconds / 60, // 초를 분으로 변환하여 전달 (기존 메서드 호환성)
+                actualRestSeconds / 60,  // 초를 분으로 변환하여 전달 (기존 메서드 호환성)
                 request.getStartTime(),
                 request.getEndTime(),
                 request.getMode(),
@@ -83,16 +83,16 @@ public class TimerController {
     // 타이머 기록 저장용 DTO
     @Getter @Setter
     public static class TimerSaveRequest {
-        private int studyTimes;          // 학습 시간 (초 단위)
-        private int restTimes;           // 휴식 시간 (초 단위)
+        private int studyTimes;
+        private int restTimes;
         private LocalDateTime startTime;
         private LocalDateTime endTime;
         private String mode;
         private String summary;
         
         // 추가 정보 (선택적)
-        private Long actualStudySeconds; // 실제 학습 시간 (초) - 우선순위 높음
-        private Long actualRestSeconds;  // 실제 휴식 시간 (초) - 우선순위 높음
+        private Long actualStudySeconds; // 실제 학습 시간 (초)
+        private Long actualRestSeconds;  // 실제 휴식 시간 (초)
         private String studyTopic;       // 학습 주제
         private String studyGoal;        // 학습 목표
     }
