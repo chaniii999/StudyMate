@@ -18,13 +18,16 @@ StudyMate는 Pomodoro 타이머와 AI 기반 피드백을 제공하는 학습 �
 
 ## 기능 설명
 1. **타이머 기록** 📊 - Pomodoro 세션이 끝날 때마다 사용 시간을 저장하고 통계로 확인할 수 있습니다.
-  <img width="381" height="809" alt="1122" src="https://github.com/user-attachments/assets/5ac74039-789f-4975-8e37-f4294f905c9f" />
+
+<img width="381" height="809" alt="1122" src="https://github.com/user-attachments/assets/5ac74039-789f-4975-8e37-f4294f905c9f" />
 
 2. **AI 설문조사 데이터 조사** 📝 - 간단한 설문을 통해 학습 습관을 분석하고 개인화된 데이터를 제공합니다.
-   <img width="381" height="809" alt="111" src="https://github.com/user-attachments/assets/be85c8bb-1585-4f12-a962-f3320e3b9a5c" />
+   
+<img width="381" height="809" alt="111" src="https://github.com/user-attachments/assets/be85c8bb-1585-4f12-a962-f3320e3b9a5c" />
 
 4. **AI 피드백 전달** 🤖 - 축적된 데이터를 바탕으로 맞춤형 학습 팁을 제공합니다.
-   <img width="381" height="809" alt="133" src="https://github.com/user-attachments/assets/28e4a8dc-dc94-4b4e-a34b-0514ac59620e" />
+
+<img width="381" height="809" alt="133" src="https://github.com/user-attachments/assets/28e4a8dc-dc94-4b4e-a34b-0514ac59620e" />
 
 
 ![타이머 화면](images/timer.png)
