@@ -25,7 +25,7 @@ StudyMate는 Pomodoro 타이머와 AI 기반 피드백을 제공하는 학습 �
    
 <img width="381" height="809" alt="111" src="https://github.com/user-attachments/assets/be85c8bb-1585-4f12-a962-f3320e3b9a5c" />
 
-4. **AI 피드백 전달** 🤖 - 축적된 데이터를 바탕으로 맞춤형 학습 팁을 제공합니다.
+3. **AI 피드백 전달** 🤖 - 축적된 데이터를 바탕으로 맞춤형 학습 팁을 제공합니다.
 
 <img width="381" height="809" alt="133" src="https://github.com/user-attachments/assets/28e4a8dc-dc94-4b4e-a34b-0514ac59620e" />
 
