@@ -12,8 +12,12 @@ import studyMate.repository.UserRepository;
 import studyMate.repository.TimerRepository;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -126,6 +130,45 @@ public class TimerService {
                 startTime != null && endTime != null ? java.time.Duration.between(startTime, endTime).toMinutes() : 0);
         
         return timerRepository.save(timer);
+    }
+
+    /**
+     * 홈 화면 통계 조회
+     */
+    public Map<String, Object> getHomeStats(User user) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // 오늘 날짜
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
+        
+        // 이번 주 시작 (월요일)
+        LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+        LocalDateTime startOfWeekTime = startOfWeek.atStartOfDay();
+        LocalDateTime endOfWeekTime = today.atTime(23, 59, 59);
+        
+        // 오늘 공부 시간 계산
+        List<Timer> todayTimers = timerRepository.findByUserAndStartTimeBetween(user, startOfDay, endOfDay);
+        int todayStudySeconds = todayTimers.stream()
+                .mapToInt(Timer::getStudyTime)
+                .sum();
+        
+        // 이번 주 공부 시간 계산
+        List<Timer> weekTimers = timerRepository.findByUserAndStartTimeBetween(user, startOfWeekTime, endOfWeekTime);
+        int weekStudySeconds = weekTimers.stream()
+                .mapToInt(Timer::getStudyTime)
+                .sum();
+        
+        log.info("홈 통계 계산 - 사용자: {}, 오늘: {}초({}분), 이번주: {}초({}분)", 
+                user.getNickname(), todayStudySeconds, todayStudySeconds/60, weekStudySeconds, weekStudySeconds/60);
+        
+        stats.put("todayStudyMinutes", todayStudySeconds / 60);
+        stats.put("weekStudyMinutes", weekStudySeconds / 60);
+        stats.put("todayStudySeconds", todayStudySeconds);
+        stats.put("weekStudySeconds", weekStudySeconds);
+        
+        return stats;
     }
 
     private TimerResDto buildErrorResponse(String message) {

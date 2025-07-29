@@ -17,6 +17,9 @@ import studyMate.repository.TimerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/timer")
@@ -78,6 +81,44 @@ public class TimerController {
                 request.getSummary()
         );
         return ResponseEntity.ok(new ApiResponse<>(true, "타이머 기록 저장 완료", timer));
+    }
+
+    // 홈 통계 조회 API
+    @GetMapping("/home-stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getHomeStats(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse<>(false, "로그인이 필요합니다.", null));
+        }
+        
+        try {
+            Map<String, Object> stats = timerService.getHomeStats(user);
+            return ResponseEntity.ok(new ApiResponse<>(true, "홈 통계 조회 성공", stats));
+        } catch (Exception e) {
+            log.error("홈 통계 조회 에러 - 사용자: {}", user.getNickname(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, "홈 통계 조회에 실패했습니다.", null));
+        }
+    }
+
+    // 테스트용 API (인증 없음)
+    @GetMapping("/test-stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getTestStats() {
+        log.info("테스트 홈 통계 API 호출됨");
+        try {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("todayStudyMinutes", 45);
+            stats.put("weekStudyMinutes", 180);
+            stats.put("todayStudySeconds", 2700);
+            stats.put("weekStudySeconds", 10800);
+            
+            log.info("테스트 홈 통계 응답: {}", stats);
+            return ResponseEntity.ok(new ApiResponse<>(true, "테스트 홈 통계 조회 성공", stats));
+        } catch (Exception e) {
+            log.error("테스트 홈 통계 조회 에러", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, "테스트 홈 통계 조회에 실패했습니다.", null));
+        }
     }
 
     // 타이머 기록 저장용 DTO

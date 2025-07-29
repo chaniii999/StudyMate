@@ -25,6 +25,12 @@ public class Timer {
     @ToString.Exclude
     private User user;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id")
+    @ToString.Exclude
+    private Schedule schedule; // 연관된 스케줄 (선택적)
+
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
