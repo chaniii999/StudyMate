@@ -145,6 +145,35 @@ public class TimerController {
         return ResponseEntity.ok(new ApiResponse<>(true, "타이머 기록 조회 성공", history));
     }
 
+    // 타이머 기록 삭제
+    @DeleteMapping("/{timerId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTimerRecord(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long timerId
+    ) {
+        if (user == null) {
+            log.warn("[TimerController] 인증되지 않은 사용자가 기록 삭제 시도: timerId={}", timerId);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse<>(false, "로그인이 필요합니다.", null));
+        }
+        
+        try {
+            boolean deleted = timerService.deleteTimerRecord(user, timerId);
+            if (deleted) {
+                log.info("[TimerController] 타이머 기록 삭제 성공 - 사용자: {}, timerId: {}", user.getNickname(), timerId);
+                return ResponseEntity.ok(new ApiResponse<>(true, "타이머 기록이 삭제되었습니다.", null));
+            } else {
+                log.warn("[TimerController] 타이머 기록 삭제 실패 - 권한 없음 또는 존재하지 않음: 사용자={}, timerId={}", user.getNickname(), timerId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse<>(false, "삭제 권한이 없거나 존재하지 않는 기록입니다.", null));
+            }
+        } catch (Exception e) {
+            log.error("[TimerController] 타이머 기록 삭제 에러 - 사용자: {}, timerId: {}", user.getNickname(), timerId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, "타이머 기록 삭제에 실패했습니다.", null));
+        }
+    }
+
 //    @GetMapping("/statistics")
 //    public ApiResponse<?> getTimerStatistics(@AuthenticationPrincipal User user) {
 //        return new ApiResponse<>(true, "Timer statistics for user: " + user.getNickname(),

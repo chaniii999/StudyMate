@@ -77,7 +77,7 @@ public class Schedule {
 
     @Column(name = "planned_break_minutes")
     private Integer plannedBreakMinutes; // 계획된 휴식 시간 (분)
-
+  
     @Column(length = 50)
     private String studyGoal; // 학습 목표
 

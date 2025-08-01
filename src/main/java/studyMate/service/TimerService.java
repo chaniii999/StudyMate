@@ -133,6 +133,34 @@ public class TimerService {
     }
 
     /**
+     * 타이머 기록 삭제
+     */
+    @Transactional
+    public boolean deleteTimerRecord(User user, Long timerId) {
+        log.info("타이머 기록 삭제 요청 - 사용자: {}, 타이머 ID: {}", user.getNickname(), timerId);
+        
+        // 타이머 기록 조회
+        Timer timer = timerRepository.findById(timerId).orElse(null);
+        if (timer == null) {
+            log.warn("타이머 기록을 찾을 수 없습니다 - ID: {}", timerId);
+            return false;
+        }
+        
+        // 권한 확인 (본인의 기록만 삭제 가능)
+        if (!timer.getUser().getId().equals(user.getId())) {
+            log.warn("권한 없는 타이머 기록 삭제 시도 - 사용자: {}, 기록 소유자: {}, 타이머 ID: {}", 
+                    user.getId(), timer.getUser().getId(), timerId);
+            return false;
+        }
+        
+        // 삭제 수행
+        timerRepository.delete(timer);
+        log.info("타이머 기록 삭제 완료 - 사용자: {}, 타이머 ID: {}", user.getNickname(), timerId);
+        
+        return true;
+    }
+
+    /**
      * 홈 화면 통계 조회
      */
     public Map<String, Object> getHomeStats(User user) {
