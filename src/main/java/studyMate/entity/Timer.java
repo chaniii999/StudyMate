@@ -23,7 +23,13 @@ public class Timer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @ToString.Exclude
+
     private User user;
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "study_goal_id")
+    @ToString.Exclude
+    private StudyGoal studyGoal; // 연관된 학습목표 (선택적)
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
