@@ -21,6 +21,7 @@ public class ScheduleResponse {
     // === 기본 정보 ===
     private String id;
     private String title;
+    private String subtitle;
     private String description;
     private String color;
 
@@ -80,6 +81,7 @@ public class ScheduleResponse {
         return ScheduleResponse.builder()
                 .id(schedule.getId())
                 .title(schedule.getTitle())
+                .subtitle(schedule.getSubtitle())
                 .description(schedule.getDescription())
                 .color(schedule.getColor())
                 .scheduleDate(schedule.getScheduleDate())

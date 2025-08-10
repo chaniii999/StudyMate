@@ -42,6 +42,7 @@ public class ScheduleService {
                 .user(user)
                 .topic(topic)
                 .title(request.getTitle())
+                .subtitle(request.getSubtitle())
                 .description(request.getDescription())
                 .color(request.getColor())
                 .scheduleDate(request.getScheduleDate())
@@ -106,6 +107,7 @@ public class ScheduleService {
         // 스케줄 정보 업데이트
         schedule.setTopic(topic);
         schedule.setTitle(request.getTitle());
+        schedule.setSubtitle(request.getSubtitle());
         schedule.setDescription(request.getDescription());
         schedule.setColor(request.getColor());
         schedule.setScheduleDate(request.getScheduleDate());

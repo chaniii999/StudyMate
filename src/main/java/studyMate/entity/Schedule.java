@@ -40,6 +40,9 @@ public class Schedule {
     @Column(length = 255, nullable = false)
     private String title; // 일정 제목
 
+    @Column(length = 500)
+    private String subtitle; // 일정 소제목
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String description; // 일정 설명

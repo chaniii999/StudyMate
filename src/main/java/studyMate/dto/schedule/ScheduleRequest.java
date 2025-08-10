@@ -16,6 +16,7 @@ import java.time.LocalTime;
 public class ScheduleRequest {
     // === 기본 일정 정보 ===
     private String title; // 일정 제목
+    private String subtitle; // 일정 소제목
     private String description; // 일정 설명
     private String color; // 캘린더 표시 색상
 
