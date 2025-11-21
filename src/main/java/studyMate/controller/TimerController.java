@@ -54,7 +54,6 @@ public class TimerController {
     public ResponseEntity<ApiResponse<List<Timer>>> getTimerHistoryByStudyGoal(
             @AuthenticationPrincipal User user,
             @PathVariable Long studyGoalId) {
-        
         List<Timer> history = timerService.getTimerHistoryByStudyGoal(user, studyGoalId);
         return ResponseEntity.ok(ApiResponse.success(history));
     }

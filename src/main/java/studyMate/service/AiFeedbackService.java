@@ -2,12 +2,10 @@ package studyMate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
-import studyMate.config.OpenAiProperties;
 import studyMate.dto.ai.*;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
@@ -21,7 +19,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiFeedbackService {
     private final WebClient openAiWebClient;
-    private final OpenAiProperties openAiProrperties;
     private final TimerRepository timerRepository;
     private final RateLimiterService rateLimiterService;
 
@@ -31,37 +28,8 @@ public class AiFeedbackService {
             Timer timer = timerRepository.findById(request.getTimerId())
                     .orElseThrow(() -> new RuntimeException("Timer not found"));
             
-            // Request 데이터로 Timer 업데이트 (데이터가 있는 경우)
-            boolean updated = false;
-            if (request.getStudyTime() > 0) {
-                timer.setStudyTime(request.getStudyTime());
-                updated = true;
-            }
-            if (request.getRestTime() > 0) {
-                timer.setRestTime(request.getRestTime());
-                updated = true;
-            }
-            if (request.getMode() != null && !request.getMode().isEmpty()) {
-                timer.setMode(request.getMode());
-                updated = true;
-            }
-            if (request.getStudySummary() != null && !request.getStudySummary().isEmpty()) {
-                timer.setSummary(request.getStudySummary());
-                updated = true;
-            }
-            
-            // 업데이트된 경우 저장
-            if (updated) {
-                timerRepository.save(timer);
-            }
-            
-            // 사용자의 전체 학습 통계 조회
-            User user = timer.getUser();
-            int userTotalStudyTime = user.getTotalStudyTime();
-            
             // 요청 데이터 검증 (초 단위)
             int finalStudyTime = request.getStudyTime() > 0 ? request.getStudyTime() : timer.getStudyTime();
-            int finalRestTime = request.getRestTime() > 0 ? request.getRestTime() : timer.getRestTime();
             
             // 학습 시간이 0초이거나 비정상적인 경우 검증
             if (finalStudyTime <= 0) {
