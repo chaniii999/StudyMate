@@ -15,6 +15,8 @@ import studyMate.repository.TimerRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -25,6 +27,9 @@ public class TimerService {
     private final TimerRepository timerRepository;
     private final StudyGoalRepository studyGoalRepository;
     private final StudyGoalService studyGoalService;
+    
+    // 사용자별 타이머 상태를 저장하는 맵
+    private final Map<String, TimerStatus> userTimerStatus = new ConcurrentHashMap<>();
     
     // 타이머 기록 조회
     public List<Timer> getTimerHistory(User user) {

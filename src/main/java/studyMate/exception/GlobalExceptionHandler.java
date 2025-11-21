@@ -1,4 +1,4 @@
-package studyMate.util;
+package studyMate.exception;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,4 +12,4 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(new ApiResponse(false, ex.getMessage()));
     }
-}
+    }
