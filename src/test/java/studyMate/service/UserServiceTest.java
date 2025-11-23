@@ -11,9 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import studyMate.dto.auth.LoginResponseDto;
 import studyMate.dto.auth.SignInReq;
 import studyMate.dto.auth.SignUpReqDto;
-import studyMate.entity.RefreshToken;
 import studyMate.entity.User;
-import studyMate.repository.RefreshTokenRepository;
 import studyMate.repository.UserRepository;
 
 import java.util.Optional;
@@ -31,9 +29,6 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -41,6 +36,9 @@ class UserServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private RedisService redisService;
 
     @InjectMocks
     private UserService userService;
@@ -116,8 +114,9 @@ class UserServiceTest {
         when(jwtTokenProvider.createAccessToken(user.getEmail())).thenReturn(accessToken);
         when(jwtTokenProvider.createRefreshToken(user.getEmail())).thenReturn(refreshToken);
         when(jwtTokenProvider.getAccessTokenExpirationTime()).thenReturn(3600L);
-        when(refreshTokenRepository.findByKey(user.getEmail())).thenReturn(Optional.empty());
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(new RefreshToken());
+        when(jwtTokenProvider.getRefreshTokenExpirationTime()).thenReturn(86400L);
+        doNothing().when(redisService).deleteRefreshToken(user.getEmail());
+        doNothing().when(redisService).saveRefreshToken(anyString(), anyString(), anyLong());
 
         // When
         LoginResponseDto response = userService.login(signInReq);
@@ -166,31 +165,27 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 시 기존 리프레시 토큰 삭제")
+    @DisplayName("로그인 시 기존 리프레시 토큰 삭제 및 새 토큰 저장")
     void login_ExistingRefreshToken_DeletesOldToken() {
         // Given
         String accessToken = "access.token";
         String refreshToken = "refresh.token";
-        RefreshToken existingToken = RefreshToken.builder()
-                .key(user.getEmail())
-                .value("old.refresh.token")
-                .build();
 
         when(userRepository.findByEmail(signInReq.getEmail())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(signInReq.getPassword(), user.getPassword())).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(user.getEmail())).thenReturn(accessToken);
         when(jwtTokenProvider.createRefreshToken(user.getEmail())).thenReturn(refreshToken);
         when(jwtTokenProvider.getAccessTokenExpirationTime()).thenReturn(3600L);
-        when(refreshTokenRepository.findByKey(user.getEmail())).thenReturn(Optional.of(existingToken));
-        doNothing().when(refreshTokenRepository).delete(existingToken);
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(new RefreshToken());
+        when(jwtTokenProvider.getRefreshTokenExpirationTime()).thenReturn(86400L);
+        doNothing().when(redisService).deleteRefreshToken(user.getEmail());
+        doNothing().when(redisService).saveRefreshToken(anyString(), anyString(), anyLong());
 
         // When
         userService.login(signInReq);
 
         // Then
-        verify(refreshTokenRepository, times(1)).delete(existingToken);
-        verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
+        verify(redisService, times(1)).deleteRefreshToken(user.getEmail());
+        verify(redisService, times(1)).saveRefreshToken(eq(user.getEmail()), eq(refreshToken), eq(86400L));
     }
 }
 
