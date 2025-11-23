@@ -30,7 +30,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 .getFirst("token");
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            String email = jwtTokenProvider.getEmailFromToken(token);
+            String email = jwtTokenProvider.getUsername(token);
             User user = userRepository.findByEmail(email).orElse(null);
             if (user != null) {
                 attributes.put("user", user);
