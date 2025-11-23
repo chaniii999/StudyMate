@@ -9,9 +9,7 @@ import studyMate.dto.TokenDto;
 import studyMate.dto.auth.LoginResponseDto;
 import studyMate.dto.auth.SignInReq;
 import studyMate.dto.auth.SignUpReqDto;
-import studyMate.entity.RefreshToken;
 import studyMate.entity.User;
-import studyMate.repository.RefreshTokenRepository;
 import studyMate.repository.UserRepository;
 
 @Service
@@ -19,10 +17,10 @@ import studyMate.repository.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisService redisService;
 
     @Transactional
     public void registerUser(SignUpReqDto signUpReqDto) {
@@ -59,17 +57,12 @@ public class UserService {
         String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
 
-        // 기존 리프레시 토큰 삭제
-        refreshTokenRepository.findByKey(user.getEmail())
-                .ifPresent(refreshTokenRepository::delete);
+        // 기존 리프레시 토큰 삭제 (Redis)
+        redisService.deleteRefreshToken(user.getEmail());
 
-        // 새로운 리프레시 토큰 저장
-        RefreshToken refreshTokenEntity = RefreshToken.builder()
-                .key(user.getEmail())
-                .value(refreshToken)
-                .build();
-
-        refreshTokenRepository.save(refreshTokenEntity);
+        // 새로운 리프레시 토큰 저장 (Redis)
+        redisService.saveRefreshToken(user.getEmail(), refreshToken, 
+                jwtTokenProvider.getRefreshTokenExpirationTime());
 
         // 토큰 DTO 생성
         TokenDto tokenDto = TokenDto.builder()
