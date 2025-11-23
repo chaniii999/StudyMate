@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import studyMate.dto.ApiResponse;
+import studyMate.dto.TokenDto;
 import studyMate.dto.auth.TokenRefreshRequest;
 import studyMate.dto.auth.TokenRefreshResponse;
+import studyMate.service.AuthService;
 import studyMate.service.JwtTokenProvider;
 
 @Slf4j
@@ -19,48 +21,25 @@ import studyMate.service.JwtTokenProvider;
 public class TokenController {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthService authService;
 
-    // 토큰 갱신 API
+    // 토큰 갱신 API (AuthService 사용 - Redis 검증 포함)
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenRefreshResponse>> refreshToken(@RequestBody TokenRefreshRequest request) {
         try {
             log.info("토큰 갱신 요청");
             
-            // 액세스 토큰에서 이메일 추출
-            String email = jwtTokenProvider.getEmailFromToken(request.getAccessToken());
-            if (email == null) {
-                log.warn("액세스 토큰에서 이메일을 추출할 수 없습니다.");
-                return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "유효하지 않은 액세스 토큰입니다.", null));
-            }
-
-            // 리프레시 토큰 유효성 검증
-            if (!jwtTokenProvider.validateToken(request.getRefreshToken())) {
-                log.warn("리프레시 토큰이 유효하지 않습니다: {}", email);
-                return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "유효하지 않은 리프레시 토큰입니다.", null));
-            }
-
-            // 리프레시 토큰에서 이메일 추출 및 일치 확인
-            String refreshTokenEmail = jwtTokenProvider.getUsername(request.getRefreshToken());
-            if (!email.equals(refreshTokenEmail)) {
-                log.warn("액세스 토큰과 리프레시 토큰의 이메일이 일치하지 않습니다: {} vs {}", email, refreshTokenEmail);
-                return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "토큰 정보가 일치하지 않습니다.", null));
-            }
-
-            // 새로운 액세스 토큰 생성
-            String newAccessToken = jwtTokenProvider.refreshAccessToken(email);
-            String newRefreshToken = jwtTokenProvider.createRefreshToken(email);
+            // AuthService를 통해 리프레시 토큰 검증 및 새 토큰 발급 (Redis 검증 포함)
+            TokenDto tokenDto = authService.refreshToken(request.getRefreshToken());
 
             TokenRefreshResponse response = TokenRefreshResponse.builder()
-                    .accessToken(newAccessToken)
-                    .refreshToken(newRefreshToken)
+                    .accessToken(tokenDto.getAccessToken())
+                    .refreshToken(tokenDto.getRefreshToken())
                     .tokenType("Bearer")
-                    .expiresIn(jwtTokenProvider.getAccessTokenExpirationTime())
+                    .expiresIn(tokenDto.getAccessTokenExpiresIn())
                     .build();
 
-            log.info("토큰 갱신 성공: {}", email);
+            log.info("토큰 갱신 성공");
             return ResponseEntity.ok(new ApiResponse<>(true, "토큰이 성공적으로 갱신되었습니다.", response));
 
         } catch (Exception e) {
@@ -76,20 +55,15 @@ public class TokenController {
         try {
             log.info("토큰 상태 확인 및 갱신 요청");
             
-            // 액세스 토큰에서 이메일 추출
-            String email = jwtTokenProvider.getEmailFromToken(request.getAccessToken());
-            if (email == null) {
-                log.warn("액세스 토큰에서 이메일을 추출할 수 없습니다.");
-                return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "유효하지 않은 액세스 토큰입니다.", null));
-            }
-
             // 액세스 토큰 유효성 검증
             if (!jwtTokenProvider.validateToken(request.getAccessToken())) {
-                log.warn("액세스 토큰이 유효하지 않습니다: {}", email);
+                log.warn("액세스 토큰이 유효하지 않습니다.");
                 return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(false, "유효하지 않은 액세스 토큰입니다.", null));
             }
+            
+            // 액세스 토큰에서 이메일 추출
+            String email = jwtTokenProvider.getUsername(request.getAccessToken());
 
             // 리프레시 토큰 유효성 검증
             if (!jwtTokenProvider.validateToken(request.getRefreshToken())) {
@@ -106,7 +80,7 @@ public class TokenController {
                 log.info("액세스 토큰 갱신 필요: {}초 남음, 사용자: {}", remainingTime, email);
                 
                 // 새로운 토큰 생성
-                String newAccessToken = jwtTokenProvider.refreshAccessToken(email);
+                String newAccessToken = jwtTokenProvider.createAccessToken(email);
                 String newRefreshToken = jwtTokenProvider.createRefreshToken(email);
 
                 TokenRefreshResponse response = TokenRefreshResponse.builder()
