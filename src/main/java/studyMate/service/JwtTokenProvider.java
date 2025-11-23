@@ -122,15 +122,6 @@ public class JwtTokenProvider {
                 .getBody();
     }
 
-    public String getEmailFromToken(String token) {
-        try {
-            return (String) getClaimsFromToken(token).get("email");
-        } catch (Exception e) {
-            log.error("Error while extracting email from token", e);
-            return null;
-        }
-    }
-
     // 토큰 만료 시간 확인
     public boolean isTokenExpired(String token) {
         try {
@@ -162,12 +153,6 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             return 0;
         }
-    }
-
-    // 토큰 갱신 (액세스 토큰이 만료되었거나 곧 만료될 때)
-    public String refreshAccessToken(String email) {
-        log.info("액세스 토큰 갱신 요청: {}", email);
-        return createAccessToken(email);
     }
 
 }
