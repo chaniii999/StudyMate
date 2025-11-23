@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import studyMate.dto.TokenDto;
 import studyMate.exception.InvalidTokenException;
 import studyMate.repository.UserRepository;
@@ -74,7 +73,6 @@ public class AuthService {
         return email != null && email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$");
     }
 
-    @Transactional
     public TokenDto refreshToken(String refreshToken) {
         // 리프레시 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
