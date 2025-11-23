@@ -3,10 +3,12 @@ package studyMate.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.*;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import studyMate.interceptor.JwtHandshakeInterceptor;
-import studyMate.service.JwtTokenProvider;
 import studyMate.repository.UserRepository;
+import studyMate.service.JwtTokenProvider;
 
 @Configuration
 @EnableWebSocketMessageBroker  // STOMP 사용 설정

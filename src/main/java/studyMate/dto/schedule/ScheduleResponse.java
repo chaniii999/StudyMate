@@ -5,13 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import studyMate.entity.Schedule;
-import studyMate.entity.StudyTopic;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @Builder

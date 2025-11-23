@@ -15,7 +15,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import studyMate.service.JwtTokenProvider;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor

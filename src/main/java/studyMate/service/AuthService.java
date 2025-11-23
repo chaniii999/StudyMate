@@ -6,10 +6,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import studyMate.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import studyMate.dto.TokenDto;
 import studyMate.exception.InvalidTokenException;
+import studyMate.repository.UserRepository;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

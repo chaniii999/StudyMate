@@ -5,7 +5,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
-import studyMate.dto.ApiResponse;
 import studyMate.dto.pomodoro.TimerReqDto;
 import studyMate.dto.pomodoro.TimerResDto;
 import studyMate.entity.User;

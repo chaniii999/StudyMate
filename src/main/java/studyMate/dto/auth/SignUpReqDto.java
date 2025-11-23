@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import studyMate.entity.User;
 
 @Builder
 @Getter @Setter

@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import studyMate.config.OpenAiProperties;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RateLimiterService 테스트")

@@ -2,15 +2,13 @@ package studyMate.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import studyMate.dto.ApiResponse;
-import studyMate.dto.auth.SignInReq;
 import studyMate.dto.TokenDto;
-import studyMate.dto.auth.LoginResponseDto;
-import studyMate.dto.auth.RefreshTokenRequest;
-import studyMate.dto.auth.SendCodeDto;
-import studyMate.dto.auth.SignUpReqDto;
-import studyMate.dto.auth.VerifyCodeDto;
+import studyMate.dto.auth.*;
 import studyMate.service.AuthService;
 import studyMate.service.UserService;
 
