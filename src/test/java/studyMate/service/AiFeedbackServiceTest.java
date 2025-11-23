@@ -86,11 +86,10 @@ class AiFeedbackServiceTest {
     }
 
     @Test
-    @DisplayName("학습 시간이 0초 이하면 예외 발생")
-    void getFeedback_StudyTimeZero_ThrowsException() {
+    @DisplayName("학습 시간이 3분(180초) 미만이면 예외 발생")
+    void getFeedback_StudyTimeLessThan3Minutes_ThrowsException() {
         // Given
-        timer.setStudyTime(0);
-        request.setStudyTime(0);
+        timer.setStudyTime(100); // 100초 (3분 미만)
         when(timerRepository.findById(1L)).thenReturn(Optional.of(timer));
 
         // When & Then
@@ -98,7 +97,7 @@ class AiFeedbackServiceTest {
             aiFeedbackService.getFeedback(request);
         });
 
-        assertTrue(exception.getMessage().contains("학습 시간이 0초 이하"));
+        assertTrue(exception.getMessage().contains("3분 미만"));
         verify(timerRepository, times(1)).findById(1L);
     }
 

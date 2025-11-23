@@ -22,11 +22,7 @@ public class AiFeedBackController {
                 return ResponseEntity.badRequest()
                         .body(new ApiResponse<>(false, "타이머 ID가 필요합니다.", null));
             }
-            
-            if (request.getStudyTime() <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(new ApiResponse<>(false, "학습 시간이 0분 이하입니다. 실제 학습을 진행한 후 AI 피드백을 요청해주세요.", null));
-            }
+            // studyTime은 타이머에서 조회하므로 별도 검증 불필요
             
             AiFeedbackResponse feedback = aiFeedbackService.getFeedback(request);
             return ResponseEntity.ok(new ApiResponse<>(true, "AI 피드백이 성공적으로 생성되었습니다.", feedback));

@@ -27,19 +27,13 @@ public class AiFeedbackService {
             // Timer 데이터 조회
             Timer timer = timerRepository.findById(request.getTimerId())
                     .orElseThrow(() -> new RuntimeException("Timer not found"));
-            
-            // 요청 데이터 검증 (초 단위)
-            int finalStudyTime = request.getStudyTime() > 0 ? request.getStudyTime() : timer.getStudyTime();
-            
-            // 학습 시간이 0초이거나 비정상적인 경우 검증
-            if (finalStudyTime <= 0) {
-                log.warn("AI 피드백 요청 거부: 학습 시간이 0초 이하입니다. studyTime: {}초", finalStudyTime);
-                throw new RuntimeException("학습 시간이 0초 이하입니다. 실제 학습을 진행한 후 AI 피드백을 요청해주세요.");
-            }
-            
-            // 학습 시간이 너무 짧은 경우 경고 (선택적) - 3분(180초) 미만
+
+            int finalStudyTime = timer.getStudyTime();
+
+            // 학습 시간이 너무 짧은 경우 예외 발생 - 최소 3분(180초) 이상 필요
             if (finalStudyTime < 180) {
-                log.warn("AI 피드백 요청 경고: 학습 시간이 매우 짧습니다. studyTime: {}초({}분)", finalStudyTime, finalStudyTime/60);
+                log.warn("AI 피드백 요청 거부: 학습 시간이 너무 짧습니다. studyTime: {}초({}분)", finalStudyTime, finalStudyTime/60);
+                throw new RuntimeException("학습 시간이 3분 미만입니다. 최소 3분 이상 학습한 후 AI 피드백을 요청해주세요.");
             }
             
             // 학습 요약이 없는 경우 경고
@@ -81,7 +75,7 @@ public class AiFeedbackService {
             log.info("생성된 프롬프트: {}", prompt);
             
             OpenAiRequest openAiRequest = OpenAiRequest.builder()
-                    .model("gpt-3.5-turbo")
+                    .model("gpt-4o-mini")
                     .temperature(0.7)
                     .messages(List.of(
                             OpenAiRequest.Message.builder()
@@ -167,8 +161,9 @@ public class AiFeedbackService {
 
     private String createFeedbackPrompt(Timer timer, AiFeedbackRequest request) {
         // 기본 데이터 (초 단위로 저장된 데이터를 분으로 변환하여 표시)
-        int studyTimeMinutes = request.getStudyTime() > 0 ? request.getStudyTime() : timer.getStudyTime() / 60;
-        int restTimeMinutes = request.getRestTime() > 0 ? request.getRestTime() : timer.getRestTime() / 60;
+        // 타이머에 저장된 값을 사용 (단일 진실 공급원)
+        int studyTimeMinutes = timer.getStudyTime() / 60;
+        int restTimeMinutes = timer.getRestTime() / 60;
         String mode = request.getMode() != null ? request.getMode() : timer.getMode();
         String summary = request.getStudySummary() != null ? request.getStudySummary() : 
                         (timer.getSummary() != null ? timer.getSummary() : "요약 없음");
@@ -238,7 +233,6 @@ public class AiFeedbackService {
 
     private AiFeedbackResponse parseAiResponse(String aiResponse) {
         try {
-            // 간단한 파싱 (실제로는 JSON 파서 사용 권장)
             String feedback = extractSection(aiResponse, "feedback");
             String suggestions = extractSection(aiResponse, "suggestions");
             String motivation = extractSection(aiResponse, "motivation");
@@ -259,7 +253,6 @@ public class AiFeedbackService {
     }
 
     private String extractSection(String response, String section) {
-        // 간단한 텍스트 추출 (실제 구현에서는 JSON 파서 사용 권장)
         String lowerResponse = response.toLowerCase();
         String lowerSection = section.toLowerCase();
         
@@ -313,8 +306,9 @@ public class AiFeedbackService {
     // 요청 데이터를 정리해서 세션 요약 생성
     private AiFeedbackResponse.StudySessionSummary createSessionSummary(Timer timer, AiFeedbackRequest request) {
         // 기본 데이터 (초 단위)
-        int studyTimeSeconds = request.getStudyTime() > 0 ? request.getStudyTime() : timer.getStudyTime();
-        int restTimeSeconds = request.getRestTime() > 0 ? request.getRestTime() : timer.getRestTime();
+        // 타이머에 저장된 값을 사용 (단일 진실 공급원)
+        int studyTimeSeconds = timer.getStudyTime();
+        int restTimeSeconds = timer.getRestTime();
         
         // 분 단위 변환
         int studyTimeMinutes = studyTimeSeconds / 60;
@@ -353,18 +347,5 @@ public class AiFeedbackService {
                 // 사용자 통계
                 .userTotalStudyTimeMinutes(userTotalStudyTimeMinutes)
                 .build();
-    }
-
-    // Custom exception classes
-    public static class RateLimitException extends RuntimeException {
-        public RateLimitException(String message) {
-            super(message);
-        }
-    }
-
-    public static class UnauthorizedException extends RuntimeException {
-        public UnauthorizedException(String message) {
-            super(message);
-        }
     }
 } 
