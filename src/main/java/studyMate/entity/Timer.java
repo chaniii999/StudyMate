@@ -87,4 +87,12 @@ public class Timer {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // === 업데이트 메서드 ===
+    public void updateAiFeedback(String feedback, String suggestions, String motivation) {
+        this.aiFeedback = feedback;
+        this.aiSuggestions = suggestions;
+        this.aiMotivation = motivation;
+        this.aiFeedbackCreatedAt = LocalDateTime.now();
+    }
+
 }

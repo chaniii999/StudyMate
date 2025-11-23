@@ -14,7 +14,6 @@ import studyMate.entity.Timer;
 import studyMate.entity.User;
 import studyMate.repository.TimerRepository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -132,11 +131,12 @@ public class AiFeedbackService {
                 AiFeedbackResponse.StudySessionSummary sessionSummary = createSessionSummary(timer, request);
                 feedbackResponse.setSessionSummary(sessionSummary);
                 
-                // AI 피드백 결과를 Timer 엔티티에 저장
-                timer.setAiFeedback(feedbackResponse.getFeedback());
-                timer.setAiSuggestions(feedbackResponse.getSuggestions());
-                timer.setAiMotivation(feedbackResponse.getMotivation());
-                timer.setAiFeedbackCreatedAt(LocalDateTime.now());
+                // AI 피드백 결과를 Timer 엔티티에 저장 (엔티티 메서드 사용)
+                timer.updateAiFeedback(
+                    feedbackResponse.getFeedback(),
+                    feedbackResponse.getSuggestions(),
+                    feedbackResponse.getMotivation()
+                );
                 timerRepository.save(timer);
                 
                 return feedbackResponse;

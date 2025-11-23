@@ -182,6 +182,28 @@ public class Schedule {
                 .sum();
     }
 
+    // === 업데이트 메서드 ===
+    public void updateFromRequest(studyMate.dto.schedule.ScheduleRequest request, StudyTopic topic) {
+        if (request.getTitle() != null) this.title = request.getTitle();
+        if (request.getSubtitle() != null) this.subtitle = request.getSubtitle();
+        if (request.getDescription() != null) this.description = request.getDescription();
+        if (request.getColor() != null) this.color = request.getColor();
+        if (request.getScheduleDate() != null) this.scheduleDate = request.getScheduleDate();
+        if (request.getStartTime() != null) this.startTime = request.getStartTime();
+        if (request.getEndTime() != null) this.endTime = request.getEndTime();
+        if (request.getIsAllDay() != null) this.isAllDay = request.getIsAllDay();
+        if (request.getIsRecurring() != null) this.isRecurring = request.getIsRecurring();
+        if (request.getRecurrenceRule() != null) this.recurrenceRule = request.getRecurrenceRule();
+        if (request.getStudyMode() != null) this.studyMode = request.getStudyMode();
+        if (request.getPlannedStudyMinutes() != null) this.plannedStudyMinutes = request.getPlannedStudyMinutes();
+        if (request.getPlannedBreakMinutes() != null) this.plannedBreakMinutes = request.getPlannedBreakMinutes();
+        if (request.getStudyGoal() != null) this.studyGoal = request.getStudyGoal();
+        if (request.getDifficulty() != null) this.difficulty = request.getDifficulty();
+        if (request.getReminderMinutes() != null) this.reminderMinutes = request.getReminderMinutes();
+        if (request.getIsReminderEnabled() != null) this.isReminderEnabled = request.getIsReminderEnabled();
+        this.topic = topic; // topic은 null일 수 있으므로 항상 업데이트
+    }
+
     // === 일정 상태 열거형 ===
     public enum ScheduleStatus {
         PLANNED,      // 계획됨

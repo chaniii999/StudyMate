@@ -103,4 +103,17 @@ public class StudyGoal {
     public int getRemainingHours() {
         return getRemainingMinutes() / 60;
     }
+    
+    // === 업데이트 메서드 ===
+    public void updateFromRequest(studyMate.dto.studygoal.StudyGoalRequest request) {
+        if (request.getTitle() != null) this.title = request.getTitle();
+        if (request.getSubject() != null) this.subject = request.getSubject();
+        if (request.getDescription() != null) this.description = request.getDescription();
+        if (request.getColor() != null) this.color = request.getColor();
+        if (request.getStartDate() != null) this.startDate = request.getStartDate();
+        if (request.getTargetDate() != null) this.targetDate = request.getTargetDate();
+        if (request.getTargetHours() != null) this.targetHours = request.getTargetHours();
+        if (request.getTargetSessions() != null) this.targetSessions = request.getTargetSessions();
+        if (request.getStatus() != null) this.status = request.getStatus();
+    }
 }

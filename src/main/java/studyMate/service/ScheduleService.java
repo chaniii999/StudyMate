@@ -104,25 +104,8 @@ public class ScheduleService {
                     .orElse(null);
         }
 
-        // 스케줄 정보 업데이트
-        schedule.setTopic(topic);
-        schedule.setTitle(request.getTitle());
-        schedule.setSubtitle(request.getSubtitle());
-        schedule.setDescription(request.getDescription());
-        schedule.setColor(request.getColor());
-        schedule.setScheduleDate(request.getScheduleDate());
-        schedule.setStartTime(request.getStartTime());
-        schedule.setEndTime(request.getEndTime());
-        schedule.setAllDay(request.getIsAllDay() != null ? request.getIsAllDay() : false);
-        schedule.setRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false);
-        schedule.setRecurrenceRule(request.getRecurrenceRule());
-        schedule.setStudyMode(request.getStudyMode());
-        schedule.setPlannedStudyMinutes(request.getPlannedStudyMinutes());
-        schedule.setPlannedBreakMinutes(request.getPlannedBreakMinutes());
-        schedule.setStudyGoal(request.getStudyGoal());
-        schedule.setDifficulty(request.getDifficulty());
-        schedule.setReminderMinutes(request.getReminderMinutes());
-        schedule.setReminderEnabled(request.getIsReminderEnabled() != null ? request.getIsReminderEnabled() : true);
+        // 스케줄 정보 업데이트 (엔티티 메서드 사용)
+        schedule.updateFromRequest(request, topic);
 
         Schedule updatedSchedule = scheduleRepository.save(schedule);
         log.info("스케줄 수정 완료 - ID: {}", updatedSchedule.getId());

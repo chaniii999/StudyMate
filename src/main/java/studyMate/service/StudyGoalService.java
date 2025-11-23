@@ -92,17 +92,8 @@ public class StudyGoalService {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(goalId, user)
                 .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
         
-        studyGoal.setTitle(request.getTitle());
-        studyGoal.setSubject(request.getSubject());
-        studyGoal.setDescription(request.getDescription());
-        studyGoal.setColor(request.getColor());
-        studyGoal.setStartDate(request.getStartDate());
-        studyGoal.setTargetDate(request.getTargetDate());
-        studyGoal.setTargetHours(request.getTargetHours());
-        studyGoal.setTargetSessions(request.getTargetSessions());
-        if (request.getStatus() != null) {
-            studyGoal.setStatus(request.getStatus());
-        }
+        // 학습목표 정보 업데이트 (엔티티 메서드 사용)
+        studyGoal.updateFromRequest(request);
         
         StudyGoal updatedGoal = studyGoalRepository.save(studyGoal);
         log.info("학습목표 수정: {} (사용자: {})", updatedGoal.getTitle(), user.getEmail());
