@@ -98,7 +98,7 @@ public class AiFeedbackService {
      */
     private void validateStudyTime(Timer timer) {
         int studyTime = timer.getStudyTime();
-        int minimumSeconds = 180; // 최소 3분
+        int minimumSeconds = 120; // 최소 2분
         
         if (studyTime < minimumSeconds) {
             log.warn("AI 피드백 요청 거부: 학습 시간이 너무 짧습니다. studyTime: {}초({}분)", 
