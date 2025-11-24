@@ -43,6 +43,20 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(false, ex.getMessage(), null));
     }
 
+    // AI 서비스 예외
+    @ExceptionHandler(AiServiceException.class)
+    public ResponseEntity<ApiResponse<?>> handleAiServiceException(AiServiceException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiResponse<>(false, ex.getMessage(), null));
+    }
+
+    // Rate Limit 초과
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new ApiResponse<>(false, ex.getMessage(), null));
+    }
+
     // 기타 StudyMate 예외
     @ExceptionHandler(StudyMateException.class)
     public ResponseEntity<ApiResponse<?>> handleStudyMateException(StudyMateException ex) {
