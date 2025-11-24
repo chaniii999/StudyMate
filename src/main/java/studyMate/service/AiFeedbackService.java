@@ -12,6 +12,7 @@ import studyMate.dto.ai.OpenAiRequest;
 import studyMate.dto.ai.OpenAiResponse;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.TimerNotFoundException;
 import studyMate.repository.TimerRepository;
 
 import java.util.List;
@@ -28,7 +29,7 @@ public class AiFeedbackService {
         try {
             // Timer 데이터 조회
             Timer timer = timerRepository.findById(request.getTimerId())
-                    .orElseThrow(() -> new RuntimeException("Timer not found"));
+                    .orElseThrow(() -> new TimerNotFoundException(request.getTimerId()));
 
             int finalStudyTime = timer.getStudyTime();
 
@@ -281,7 +282,7 @@ public class AiFeedbackService {
     // 기존 AI 피드백 조회
     public AiFeedbackResponse getExistingFeedback(Long timerId) {
         Timer timer = timerRepository.findById(timerId)
-                .orElseThrow(() -> new RuntimeException("Timer not found"));
+                .orElseThrow(() -> new TimerNotFoundException(timerId));
 
         if (timer.getAiFeedback() == null) {
             throw new RuntimeException("AI 피드백이 아직 생성되지 않았습니다.");

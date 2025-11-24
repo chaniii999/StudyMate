@@ -10,6 +10,8 @@ import studyMate.dto.auth.LoginResponseDto;
 import studyMate.dto.auth.SignInReq;
 import studyMate.dto.auth.SignUpReqDto;
 import studyMate.entity.User;
+import studyMate.exception.EmailAlreadyExistsException;
+import studyMate.exception.EmailNotVerifiedException;
 import studyMate.repository.UserRepository;
 
 @Service
@@ -24,9 +26,14 @@ public class UserService {
 
     @Transactional
     public void registerUser(SignUpReqDto signUpReqDto) {
+        // 이메일 중복 체크
+        if (userRepository.existsByEmail(signUpReqDto.getEmail())) {
+            throw new EmailAlreadyExistsException(signUpReqDto.getEmail());
+        }
+        
         // 이메일 인증 여부 확인
         if (!authService.isEmailVerified(signUpReqDto.getEmail())) {
-            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 완료해주세요.");
+            throw new EmailNotVerifiedException(signUpReqDto.getEmail());
         }
 
         // 비밀번호 암호화

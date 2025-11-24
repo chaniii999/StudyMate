@@ -11,11 +11,11 @@ import studyMate.entity.GoalStatus;
 import studyMate.entity.StudyGoal;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.StudyGoalNotFoundException;
 import studyMate.repository.StudyGoalRepository;
 import studyMate.repository.TimerRepository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class StudyGoalService {
     // 특정 학습목표 조회
     public StudyGoalResponse getStudyGoal(User user, Long goalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(goalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(goalId));
         return StudyGoalResponse.from(studyGoal);
     }
     
@@ -90,7 +90,7 @@ public class StudyGoalService {
     @Transactional
     public StudyGoalResponse updateStudyGoal(User user, Long goalId, StudyGoalRequest request) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(goalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(goalId));
         
         // 학습목표 정보 업데이트 (엔티티 메서드 사용)
         studyGoal.updateFromRequest(request);
@@ -105,7 +105,7 @@ public class StudyGoalService {
     @Transactional
     public void deleteStudyGoal(User user, Long goalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(goalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(goalId));
         
         studyGoalRepository.delete(studyGoal);
         log.info("학습목표 삭제: {} (사용자: {})", studyGoal.getTitle(), user.getEmail());
@@ -115,7 +115,7 @@ public class StudyGoalService {
     @Transactional
     public void updateProgress(Long goalId, int studyMinutes) {
         StudyGoal studyGoal = studyGoalRepository.findById(goalId)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(goalId));
         
         // 진행 시간 업데이트 (분 단위로 정확하게 누적)
         int newCurrentMinutes = studyGoal.getCurrentMinutes() + studyMinutes;
@@ -145,11 +145,9 @@ public class StudyGoalService {
     public StudyGoalStatistics getStudyGoalStatistics(User user, Long goalId, 
                                                      LocalDate startDate, LocalDate endDate) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(goalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(goalId));
         
         // 해당 기간의 타이머 기록 조회 (특정 학습목표별로 필터링)
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
         List<Timer> timerRecords = timerRepository.findByUserAndOptionalStudyGoalAndDateRange(
                 user, studyGoal, startDate, endDate);
         
