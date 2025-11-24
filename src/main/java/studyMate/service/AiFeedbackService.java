@@ -2,6 +2,9 @@ package studyMate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
@@ -12,6 +15,10 @@ import studyMate.dto.ai.OpenAiRequest;
 import studyMate.dto.ai.OpenAiResponse;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.AiServiceException;
+import studyMate.exception.RateLimitExceededException;
+import studyMate.exception.StudyMateException;
+import studyMate.exception.StudyTimeTooShortException;
 import studyMate.exception.TimerNotFoundException;
 import studyMate.repository.TimerRepository;
 
@@ -24,142 +31,209 @@ public class AiFeedbackService {
     private final WebClient openAiWebClient;
     private final TimerRepository timerRepository;
     private final RateLimiterService rateLimiterService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AiFeedbackResponse getFeedback(AiFeedbackRequest request) {
         try {
-            // Timer 데이터 조회
-            Timer timer = timerRepository.findById(request.getTimerId())
-                    .orElseThrow(() -> new TimerNotFoundException(request.getTimerId()));
-
-            int finalStudyTime = timer.getStudyTime();
-
-            // 학습 시간이 너무 짧은 경우 예외 발생 - 최소 3분(180초) 이상 필요
-            if (finalStudyTime < 180) {
-                log.warn("AI 피드백 요청 거부: 학습 시간이 너무 짧습니다. studyTime: {}초({}분)", finalStudyTime, finalStudyTime/60);
-                throw new RuntimeException("학습 시간이 3분 미만입니다. 최소 3분 이상 학습한 후 AI 피드백을 요청해주세요.");
-            }
+            // 1. Timer 데이터 조회 및 검증
+            Timer timer = validateAndGetTimer(request);
             
-            // 학습 요약이 없는 경우 경고
-            String finalSummary = request.getStudySummary() != null ? request.getStudySummary() : 
-                                 (timer.getSummary() != null ? timer.getSummary() : "");
-            if (finalSummary.trim().isEmpty()) {
-                log.warn("AI 피드백 요청 경고: 학습 요약이 없습니다.");
-            }
+            // 2. 학습 시간 검증
+            validateStudyTime(timer);
             
-            // 학습 모드가 없는 경우 경고
-            String finalMode = request.getMode() != null ? request.getMode() : timer.getMode();
-            if (finalMode == null || finalMode.trim().isEmpty()) {
-                log.warn("AI 피드백 요청 경고: 학습 모드 정보가 없습니다.");
-            }
-
-            // Rate limit check
-            if (!rateLimiterService.canMakeRequest()) {
-                log.warn("Rate limit exceeded. Current requests: {}/{}", 
-                        rateLimiterService.getCurrentRequestCount(), 
-                        rateLimiterService.getMaxRequestsPerMinute());
-                throw new RuntimeException("AI 서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.");
-            }
-
-            // 디버깅을 위한 로그 추가
-            log.info("Timer 데이터 - studyTime: {}초({}분), restTime: {}초({}분), mode: {}, summary: {}", 
-                    timer.getStudyTime(), timer.getStudyTime()/60, timer.getRestTime(), timer.getRestTime()/60, 
-                    timer.getMode(), timer.getSummary());
-            log.info("Request 기본 데이터 - studyTime: {}, restTime: {}, mode: {}, summary: {}", 
-                    request.getStudyTime(), request.getRestTime(), request.getMode(), request.getStudySummary());
-            log.info("Request 추가 데이터 - topic: {}, goal: {}, difficulty: {}, concentration: {}, mood: {}", 
-                    request.getStudyTopic(), request.getStudyGoal(), request.getDifficulty(), 
-                    request.getConcentration(), request.getMood());
-            log.info("Request 환경 데이터 - interruptions: {}, method: {}, environment: {}, energy: {}, stress: {}", 
-                    request.getInterruptions(), request.getStudyMethod(), request.getEnvironment(), 
-                    request.getEnergyLevel(), request.getStressLevel());
+            // 3. Rate Limit 확인
+            checkRateLimit();
             
-            // AI 피드백 요청 생성
-            String prompt = createFeedbackPrompt(timer, request);
-            log.info("생성된 프롬프트: {}", prompt);
+            // 4. 요청 데이터 로깅
+            logRequestData(timer, request);
             
-            OpenAiRequest openAiRequest = OpenAiRequest.builder()
-                    .model("gpt-4o-mini")
-                    .temperature(0.7)
-                    .messages(List.of(
-                            OpenAiRequest.Message.builder()
-                                    .role("system")
-                                    .content("당신은 학습 효과를 분석하고 개선 방안을 제시하는 전문가입니다. 한국어로 답변해주세요.")
-                                    .build(),
-                            OpenAiRequest.Message.builder()
-                                    .role("user")
-                                    .content(prompt)
-                                    .build()
-                    ))
-                    .build();
-
-            // OpenAI API 호출 (재시도 로직 포함)
-            OpenAiResponse response = null;
-            int maxRetries = 3;
-            int retryCount = 0;
+            // 5. AI 피드백 요청 생성
+            OpenAiRequest openAiRequest = buildOpenAiRequest(timer, request);
             
-            while (retryCount < maxRetries) {
-                try {
-                    response = openAiWebClient.post()
-                            .uri("/chat/completions")
-                            .bodyValue(openAiRequest)
-                            .retrieve()
-                            .bodyToMono(OpenAiResponse.class)
-                            .block();
-                    break; // 성공하면 루프 종료
-                } catch (WebClientRequestException e) {
-                    retryCount++;
-                    log.warn("OpenAI API 연결 오류 (재시도 {}/{}): {}", retryCount, maxRetries, e.getMessage());
-                    
-                    if (retryCount >= maxRetries) {
-                        throw e; // 최대 재시도 횟수 초과
-                    }
-                    
-                    // 재시도 전 잠시 대기 (지수 백오프)
-                    try {
-                        Thread.sleep(1000 * retryCount); // 1초, 2초, 3초 대기
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("재시도 대기 중 인터럽트 발생", ie);
-                    }
-                }
-            }
-
-            if (response != null && !response.getChoices().isEmpty()) {
-                String aiResponse = response.getChoices().get(0).getMessage().getContent();
-                AiFeedbackResponse feedbackResponse = parseAiResponse(aiResponse);
-                
-                // 요청 데이터를 정리해서 응답에 포함
-                AiFeedbackResponse.StudySessionSummary sessionSummary = createSessionSummary(timer, request);
-                feedbackResponse.setSessionSummary(sessionSummary);
-                
-                // AI 피드백 결과를 Timer 엔티티에 저장 (엔티티 메서드 사용)
-                timer.updateAiFeedback(
-                    feedbackResponse.getFeedback(),
-                    feedbackResponse.getSuggestions(),
-                    feedbackResponse.getMotivation()
-                );
-                timerRepository.save(timer);
-                
-                return feedbackResponse;
-            }
-
-            throw new RuntimeException("AI 응답을 받지 못했습니다.");
-
+            // 6. OpenAI API 호출 (재시도 로직 포함)
+            OpenAiResponse response = callOpenAiWithRetry(openAiRequest);
+            
+            // 7. 응답 파싱 및 저장
+            return parseAndSaveFeedback(timer, response, request);
+            
         } catch (WebClientResponseException e) {
-            log.error("OpenAI API 호출 실패 - HTTP {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            if (e.getStatusCode().value() == 429) {
-                throw new RuntimeException("AI 서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.");
-            } else if (e.getStatusCode().value() == 401) {
-                throw new RuntimeException("AI 서비스 인증에 실패했습니다. 관리자에게 문의해주세요.");
-            } else {
-                throw new RuntimeException("AI 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
-            }
+            throw handleWebClientResponseException(e);
         } catch (WebClientRequestException e) {
             log.error("OpenAI API 연결 오류: {}", e.getMessage());
-            throw new RuntimeException("AI 서비스 연결에 실패했습니다. 네트워크 상태를 확인하고 잠시 후 다시 시도해주세요.");
+            throw new AiServiceException("AI 서비스 연결에 실패했습니다. 네트워크 상태를 확인하고 잠시 후 다시 시도해주세요.", e);
+        } catch (StudyMateException e) {
+            // 커스텀 예외는 그대로 전파
+            throw e;
         } catch (Exception e) {
             log.error("AI 피드백 생성 중 오류 발생", e);
-            throw new RuntimeException("AI 피드백 생성에 실패했습니다: " + e.getMessage());
+            throw new AiServiceException("AI 피드백 생성에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Timer 데이터 조회 및 검증
+     */
+    private Timer validateAndGetTimer(AiFeedbackRequest request) {
+        Timer timer = timerRepository.findById(request.getTimerId())
+                .orElseThrow(() -> new TimerNotFoundException(request.getTimerId()));
+        
+        // 학습 요약이 없는 경우 경고
+        String finalSummary = request.getStudySummary() != null ? request.getStudySummary() : 
+                             (timer.getSummary() != null ? timer.getSummary() : "");
+        if (finalSummary.trim().isEmpty()) {
+            log.warn("AI 피드백 요청 경고: 학습 요약이 없습니다.");
+        }
+        
+        // 학습 모드가 없는 경우 경고
+        String finalMode = request.getMode() != null ? request.getMode() : timer.getMode();
+        if (finalMode == null || finalMode.trim().isEmpty()) {
+            log.warn("AI 피드백 요청 경고: 학습 모드 정보가 없습니다.");
+        }
+        
+        return timer;
+    }
+    
+    /**
+     * 학습 시간 검증
+     */
+    private void validateStudyTime(Timer timer) {
+        int studyTime = timer.getStudyTime();
+        int minimumSeconds = 180; // 최소 3분
+        
+        if (studyTime < minimumSeconds) {
+            log.warn("AI 피드백 요청 거부: 학습 시간이 너무 짧습니다. studyTime: {}초({}분)", 
+                    studyTime, studyTime / 60);
+            throw new StudyTimeTooShortException(studyTime, minimumSeconds);
+        }
+    }
+    
+    /**
+     * Rate Limit 확인
+     */
+    private void checkRateLimit() {
+        if (!rateLimiterService.canMakeRequest()) {
+            int currentRequests = rateLimiterService.getCurrentRequestCount();
+            int maxRequests = rateLimiterService.getMaxRequestsPerMinute();
+            log.warn("Rate limit exceeded. Current requests: {}/{}", currentRequests, maxRequests);
+            throw new RateLimitExceededException(currentRequests, maxRequests);
+        }
+    }
+    
+    /**
+     * 요청 데이터 로깅
+     */
+    private void logRequestData(Timer timer, AiFeedbackRequest request) {
+        log.info("Timer 데이터 - studyTime: {}초({}분), restTime: {}초({}분), mode: {}, summary: {}", 
+                timer.getStudyTime(), timer.getStudyTime()/60, timer.getRestTime(), timer.getRestTime()/60, 
+                timer.getMode(), timer.getSummary());
+        log.info("Request 기본 데이터 - studyTime: {}, restTime: {}, mode: {}, summary: {}", 
+                request.getStudyTime(), request.getRestTime(), request.getMode(), request.getStudySummary());
+        log.info("Request 추가 데이터 - topic: {}, goal: {}, difficulty: {}, concentration: {}, mood: {}", 
+                request.getStudyTopic(), request.getStudyGoal(), request.getDifficulty(), 
+                request.getConcentration(), request.getMood());
+        log.info("Request 환경 데이터 - interruptions: {}, method: {}, environment: {}, energy: {}, stress: {}", 
+                request.getInterruptions(), request.getStudyMethod(), request.getEnvironment(), 
+                request.getEnergyLevel(), request.getStressLevel());
+    }
+    
+    /**
+     * OpenAI 요청 생성
+     */
+    private OpenAiRequest buildOpenAiRequest(Timer timer, AiFeedbackRequest request) {
+        String prompt = createFeedbackPrompt(timer, request);
+        log.info("생성된 프롬프트: {}", prompt);
+        
+        return OpenAiRequest.builder()
+                .model("gpt-4o-mini")
+                .temperature(0.7)
+                .messages(List.of(
+                        OpenAiRequest.Message.builder()
+                                .role("system")
+                                .content("당신은 학습 효과를 분석하고 개선 방안을 제시하는 전문가입니다. 한국어로 답변해주세요.")
+                                .build(),
+                        OpenAiRequest.Message.builder()
+                                .role("user")
+                                .content(prompt)
+                                .build()
+                ))
+                .build();
+    }
+    
+    /**
+     * OpenAI API 호출 (재시도 로직 포함)
+     */
+    private OpenAiResponse callOpenAiWithRetry(OpenAiRequest openAiRequest) {
+        int maxRetries = 3;
+        int retryCount = 0;
+        
+        while (retryCount < maxRetries) {
+            try {
+                return openAiWebClient.post()
+                        .uri("/chat/completions")
+                        .bodyValue(openAiRequest)
+                        .retrieve()
+                        .bodyToMono(OpenAiResponse.class)
+                        .block();
+            } catch (WebClientRequestException e) {
+                retryCount++;
+                log.warn("OpenAI API 연결 오류 (재시도 {}/{}): {}", retryCount, maxRetries, e.getMessage());
+                
+                if (retryCount >= maxRetries) {
+                    throw e; // 최대 재시도 횟수 초과
+                }
+                
+                // 재시도 전 잠시 대기 (지수 백오프)
+                try {
+                    Thread.sleep(1000L * retryCount); // 1초, 2초, 3초 대기
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new AiServiceException("재시도 대기 중 인터럽트 발생", ie);
+                }
+            }
+        }
+        
+        throw new AiServiceException("AI 응답을 받지 못했습니다. 최대 재시도 횟수를 초과했습니다.");
+    }
+    
+    /**
+     * 응답 파싱 및 저장
+     */
+    private AiFeedbackResponse parseAndSaveFeedback(Timer timer, OpenAiResponse response, AiFeedbackRequest request) {
+        if (response == null || response.getChoices().isEmpty()) {
+            throw new AiServiceException("AI 응답을 받지 못했습니다.");
+        }
+        
+        String aiResponse = response.getChoices().get(0).getMessage().getContent();
+        AiFeedbackResponse feedbackResponse = parseAiResponse(aiResponse);
+        
+        // 요청 데이터를 정리해서 응답에 포함
+        AiFeedbackResponse.StudySessionSummary sessionSummary = createSessionSummary(timer, request);
+        feedbackResponse.setSessionSummary(sessionSummary);
+        
+        // AI 피드백 결과를 Timer 엔티티에 저장
+        timer.updateAiFeedback(
+                feedbackResponse.getFeedback(),
+                feedbackResponse.getSuggestions(),
+                feedbackResponse.getMotivation()
+        );
+        timerRepository.save(timer);
+        
+        return feedbackResponse;
+    }
+    
+    /**
+     * WebClientResponseException 처리
+     */
+    private AiServiceException handleWebClientResponseException(WebClientResponseException e) {
+        log.error("OpenAI API 호출 실패 - HTTP {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+        
+        int statusCode = e.getStatusCode().value();
+        if (statusCode == 429) {
+            return new AiServiceException("AI 서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.");
+        } else if (statusCode == 401) {
+            return new AiServiceException("AI 서비스 인증에 실패했습니다. 관리자에게 문의해주세요.");
+        } else {
+            return new AiServiceException("AI 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
         }
     }
 
@@ -235,7 +309,49 @@ public class AiFeedbackService {
         );
     }
 
+    /**
+     * AI 응답 파싱 (JSON 우선, 실패 시 텍스트 파싱)
+     */
     private AiFeedbackResponse parseAiResponse(String aiResponse) {
+        try {
+            // 1. JSON 파싱 시도
+            return parseJsonResponse(aiResponse);
+        } catch (JsonProcessingException e) {
+            log.warn("JSON 파싱 실패, 텍스트 파싱 시도: {}", e.getMessage());
+            // 2. JSON이 아닌 경우 텍스트 파싱 시도
+            return parseTextResponse(aiResponse);
+        }
+    }
+    
+    /**
+     * JSON 형식의 AI 응답 파싱
+     */
+    private AiFeedbackResponse parseJsonResponse(String aiResponse) throws JsonProcessingException {
+        // JSON 코드 블록 제거 (```json ... ```)
+        String cleanedResponse = aiResponse.replaceAll("```json\\s*", "")
+                                           .replaceAll("```\\s*", "")
+                                           .trim();
+        
+        JsonNode jsonNode = objectMapper.readTree(cleanedResponse);
+        
+        String feedback = jsonNode.has("feedback") ? 
+                jsonNode.get("feedback").asText() : "피드백을 제공할 수 없습니다.";
+        String suggestions = jsonNode.has("suggestions") ? 
+                jsonNode.get("suggestions").asText() : "제안을 제공할 수 없습니다.";
+        String motivation = jsonNode.has("motivation") ? 
+                jsonNode.get("motivation").asText() : "계속해서 학습을 진행해주세요!";
+        
+        return AiFeedbackResponse.builder()
+                .feedback(feedback)
+                .suggestions(suggestions)
+                .motivation(motivation)
+                .build();
+    }
+    
+    /**
+     * 텍스트 형식의 AI 응답 파싱 (하위 호환성)
+     */
+    private AiFeedbackResponse parseTextResponse(String aiResponse) {
         try {
             String feedback = extractSection(aiResponse, "feedback");
             String suggestions = extractSection(aiResponse, "suggestions");
@@ -247,6 +363,7 @@ public class AiFeedbackService {
                     .motivation(motivation)
                     .build();
         } catch (Exception e) {
+            log.warn("텍스트 파싱도 실패, 전체 응답을 feedback으로 사용: {}", e.getMessage());
             // 파싱 실패 시 전체 응답을 feedback으로 사용
             return AiFeedbackResponse.builder()
                     .feedback(aiResponse)
@@ -255,7 +372,10 @@ public class AiFeedbackService {
                     .build();
         }
     }
-
+    
+    /**
+     * 텍스트에서 섹션 추출 (하위 호환성)
+     */
     private String extractSection(String response, String section) {
         String lowerResponse = response.toLowerCase();
         String lowerSection = section.toLowerCase();
