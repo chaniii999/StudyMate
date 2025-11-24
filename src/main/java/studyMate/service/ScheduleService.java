@@ -11,6 +11,7 @@ import studyMate.entity.StudyTopic;
 import studyMate.entity.User;
 import studyMate.exception.AccessDeniedException;
 import studyMate.exception.ScheduleNotFoundException;
+import studyMate.exception.ValidationException;
 import studyMate.repository.ScheduleRepository;
 import studyMate.repository.StudyTopicRepository;
 
@@ -25,6 +26,29 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final StudyTopicRepository studyTopicRepository;
+
+    // === 공통 메서드 ===
+
+    /**
+     * 스케줄 조회 및 권한 확인
+     * @param user 요청 사용자
+     * @param scheduleId 스케줄 ID
+     * @return 권한이 있는 스케줄 엔티티
+     * @throws ScheduleNotFoundException 스케줄을 찾을 수 없을 때
+     * @throws AccessDeniedException 권한이 없을 때
+     */
+    private Schedule findScheduleWithPermission(User user, String scheduleId) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
+
+        if (!schedule.getUser().getId().equals(user.getId())) {
+            log.warn("권한 없는 스케줄 접근 시도 - 사용자: {}, 스케줄 소유자: {}, 스케줄 ID: {}", 
+                    user.getId(), schedule.getUser().getId(), scheduleId);
+            throw new AccessDeniedException("스케줄", scheduleId, user.getId());
+        }
+
+        return schedule;
+    }
 
     // === CRUD 작업 ===
 
@@ -73,16 +97,7 @@ public class ScheduleService {
     public ScheduleResponse getSchedule(User user, String scheduleId) {
         log.info("스케줄 조회 요청 - 사용자: {}, 스케줄 ID: {}", user.getNickname(), scheduleId);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
-
-        // 권한 확인
-        if (!schedule.getUser().getId().equals(user.getId())) {
-            log.warn("권한 없는 스케줄 접근 시도 - 사용자: {}, 스케줄 소유자: {}, 스케줄 ID: {}", 
-                    user.getId(), schedule.getUser().getId(), scheduleId);
-            throw new AccessDeniedException("스케줄", scheduleId, user.getId());
-        }
-
+        Schedule schedule = findScheduleWithPermission(user, scheduleId);
         return ScheduleResponse.from(schedule);
     }
 
@@ -91,13 +106,7 @@ public class ScheduleService {
     public ScheduleResponse updateSchedule(User user, String scheduleId, ScheduleRequest request) {
         log.info("스케줄 수정 요청 - 사용자: {}, 스케줄 ID: {}", user.getNickname(), scheduleId);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
-
-        // 권한 확인
-        if (!schedule.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("스케줄", scheduleId, user.getId());
-        }
+        Schedule schedule = findScheduleWithPermission(user, scheduleId);
 
         // StudyTopic 조회 (선택적)
         StudyTopic topic = null;
@@ -120,13 +129,7 @@ public class ScheduleService {
     public void deleteSchedule(User user, String scheduleId) {
         log.info("스케줄 삭제 요청 - 사용자: {}, 스케줄 ID: {}", user.getNickname(), scheduleId);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
-
-        // 권한 확인
-        if (!schedule.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("해당 스케줄을 삭제할 권한이 없습니다.");
-        }
+        Schedule schedule = findScheduleWithPermission(user, scheduleId);
 
         scheduleRepository.delete(schedule);
         log.info("스케줄 삭제 완료 - ID: {}", scheduleId);
@@ -207,13 +210,7 @@ public class ScheduleService {
     public ScheduleResponse updateScheduleStatus(User user, String scheduleId, Schedule.ScheduleStatus status) {
         log.info("스케줄 상태 변경 요청 - 사용자: {}, 스케줄 ID: {}, 상태: {}", user.getNickname(), scheduleId, status);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
-
-        // 권한 확인
-        if (!schedule.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("스케줄", scheduleId, user.getId());
-        }
+        Schedule schedule = findScheduleWithPermission(user, scheduleId);
 
         schedule.setStatus(status);
         
@@ -233,17 +230,11 @@ public class ScheduleService {
     public ScheduleResponse updateCompletionRate(User user, String scheduleId, Integer completionRate) {
         log.info("완료율 업데이트 요청 - 사용자: {}, 스케줄 ID: {}, 완료율: {}%", user.getNickname(), scheduleId, completionRate);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException(scheduleId));
-
-        // 권한 확인
-        if (!schedule.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("스케줄", scheduleId, user.getId());
-        }
+        Schedule schedule = findScheduleWithPermission(user, scheduleId);
 
         // 완료율 범위 검증 (0-100)
         if (completionRate < 0 || completionRate > 100) {
-            throw new RuntimeException("완료율은 0에서 100 사이의 값이어야 합니다.");
+            throw new ValidationException("완료율", "0에서 100 사이의 값이어야 합니다");
         }
 
         schedule.setCompletionRate(completionRate);
