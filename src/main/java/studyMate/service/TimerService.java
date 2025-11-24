@@ -9,6 +9,7 @@ import studyMate.dto.pomodoro.TimerResDto;
 import studyMate.entity.StudyGoal;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.StudyGoalNotFoundException;
 import studyMate.repository.StudyGoalRepository;
 import studyMate.repository.TimerRepository;
 
@@ -44,7 +45,7 @@ public class TimerService {
     // 학습목표별 타이머 기록 조회
     public List<Timer> getTimerHistoryByStudyGoal(User user, Long studyGoalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
         return timerRepository.findByUserAndStudyGoal(user, studyGoal);
     }
     
@@ -56,7 +57,7 @@ public class TimerService {
         // 학습목표가 지정된 경우 연결
         if (studyGoalId != null) {
             StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
-                    .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
             timer.setStudyGoal(studyGoal);
             
             // 학습목표 진행도 업데이트
@@ -139,12 +140,10 @@ public class TimerService {
                 .sum() / 60; // 초 -> 분 변환
     }
     
-    // 사용자의 총 학습시간 조회
+    // 사용자의 총 학습시간 조회 (DB 집계 쿼리 사용으로 성능 개선)
     public int getTotalStudyTime(User user) {
-        List<Timer> allTimers = timerRepository.findByUser(user);
-        return allTimers.stream()
-                .mapToInt(Timer::getStudyTime)
-                .sum() / 60; // 초 -> 분 변환
+        int totalSeconds = timerRepository.sumStudyTimeByUser(user);
+        return totalSeconds / 60; // 초 -> 분 변환
     }
     
     // 사용자의 총 학습 세션 수 조회
@@ -152,33 +151,22 @@ public class TimerService {
         return timerRepository.countByUser(user);
     }
     
-    // 사용자의 평균 세션 시간 조회 (분)
+    // 사용자의 평균 세션 시간 조회 (분) - DB 집계 쿼리 사용으로 성능 개선
     public double getAverageSessionTime(User user) {
-        List<Timer> allTimers = timerRepository.findByUser(user);
-        if (allTimers.isEmpty()) {
-            return 0.0;
-        }
-        
-        int totalMinutes = allTimers.stream()
-                .mapToInt(Timer::getStudyTime)
-                .sum() / 60;
-        
-        return (double) totalMinutes / allTimers.size();
+        double avgSeconds = timerRepository.avgStudyTimeByUser(user);
+        return avgSeconds / 60.0; // 초 -> 분 변환 (소수점 포함)
     }
     
-    // 최장 학습 세션 시간 조회 (분)
+    // 최장 학습 세션 시간 조회 (분) - DB 집계 쿼리 사용으로 성능 개선
     public int getLongestSessionTime(User user) {
-        List<Timer> allTimers = timerRepository.findByUser(user);
-        return allTimers.stream()
-                .mapToInt(Timer::getStudyTime)
-                .max()
-                .orElse(0) / 60; // 초 -> 분 변환
+        int maxSeconds = timerRepository.maxStudyTimeByUser(user);
+        return maxSeconds / 60; // 초 -> 분 변환
     }
     
     // 학습목표별 총 학습시간 조회
     public int getStudyTimeByGoal(User user, Long studyGoalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
         
         List<Timer> goalTimers = timerRepository.findByUserAndStudyGoal(user, studyGoal);
         return goalTimers.stream()
@@ -189,7 +177,7 @@ public class TimerService {
     // 학습목표별 세션 수 조회
     public int getSessionCountByGoal(User user, Long studyGoalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
-                .orElseThrow(() -> new RuntimeException("학습목표를 찾을 수 없습니다."));
+                .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
         
         return timerRepository.countByUserAndStudyGoal(user, studyGoal);
     }
