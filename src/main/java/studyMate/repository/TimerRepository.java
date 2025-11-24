@@ -31,9 +31,7 @@ public interface TimerRepository extends JpaRepository<Timer, Long> {
                                            @Param("endDate") LocalDate endDate);
     
     // 사용자의 학습목표별 타이머 기록 조회
-    @Query("SELECT t FROM Timer t WHERE t.user = :user AND t.studyGoal = :studyGoal " +
-           "ORDER BY t.createdAt DESC")
-    List<Timer> findByUserAndStudyGoal(@Param("user") User user, @Param("studyGoal") StudyGoal studyGoal);
+    List<Timer> findByUserAndStudyGoalOrderByCreatedAtDesc(User user, StudyGoal studyGoal);
     
     // 사용자의 특정 기간 타이머 기록 조회 (학습목표별 필터링 포함)
     @Query("SELECT t FROM Timer t WHERE t.user = :user " +

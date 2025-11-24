@@ -46,7 +46,7 @@ public class TimerService {
     public List<Timer> getTimerHistoryByStudyGoal(User user, Long studyGoalId) {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
                 .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
-        return timerRepository.findByUserAndStudyGoal(user, studyGoal);
+        return timerRepository.findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal);
     }
     
     // 타이머 기록 저장 (학습목표 연동)
@@ -168,7 +168,7 @@ public class TimerService {
         StudyGoal studyGoal = studyGoalRepository.findByIdAndUser(studyGoalId, user)
                 .orElseThrow(() -> new StudyGoalNotFoundException(studyGoalId));
         
-        List<Timer> goalTimers = timerRepository.findByUserAndStudyGoal(user, studyGoal);
+        List<Timer> goalTimers = timerRepository.findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal);
         return goalTimers.stream()
                 .mapToInt(Timer::getStudyTime)
                 .sum() / 60; // 초 -> 분 변환
