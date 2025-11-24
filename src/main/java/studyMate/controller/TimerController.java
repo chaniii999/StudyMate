@@ -82,12 +82,19 @@ public class TimerController {
             @AuthenticationPrincipal User user,
             @PathVariable Long timerId) {
         
-        boolean deleted = timerService.deleteTimerRecord(user, timerId);
-        if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null));
-        } else {
+        try {
+            boolean deleted = timerService.deleteTimerRecord(user, timerId);
+            if (deleted) {
+                return ResponseEntity.ok(ApiResponse.success(null));
+            } else {
+                // 타이머가 존재하지 않거나 권한이 없는 경우
+                return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("타이머 기록을 찾을 수 없거나 삭제할 권한이 없습니다."));
+            }
+        } catch (Exception e) {
+            log.error("타이머 기록 삭제 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("타이머 기록을 삭제할 수 없습니다."));
+                    .body(ApiResponse.error("타이머 기록 삭제에 실패했습니다: " + e.getMessage()));
         }
     }
     

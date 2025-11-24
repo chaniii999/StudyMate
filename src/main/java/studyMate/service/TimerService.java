@@ -75,38 +75,51 @@ public class TimerService {
     // 타이머 기록 삭제
     @Transactional
     public boolean deleteTimerRecord(User user, Long timerId) {
-        return timerRepository.findById(timerId)
-                .filter(timer -> timer.getUser().equals(user))
-                .map(timer -> {
-                    // 학습목표가 연결된 경우 진행도 차감
-                    if (timer.getStudyGoal() != null) {
-                        StudyGoal studyGoal = timer.getStudyGoal();
-                        int studyMinutes = timer.getStudyTime() / 60;
-                        int hoursToDeduct = studyMinutes / 60;
-                        
-                        if (hoursToDeduct > 0) {
-                            studyGoal.setCurrentHours(Math.max(0, studyGoal.getCurrentHours() - hoursToDeduct));
-                        }
-                        studyGoal.setCurrentSessions(Math.max(0, studyGoal.getCurrentSessions() - 1));
-                        
-                        studyGoalRepository.save(studyGoal);
-                        log.info("타이머 기록 삭제로 학습목표 진행도 차감: {} ({}시간, 1세션)", 
-                                studyGoal.getTitle(), hoursToDeduct);
-                    }
-                    
-                    timerRepository.delete(timer);
-                    log.info("타이머 기록 삭제: {} (사용자: {})", timerId, user.getEmail());
-                    return true;
-                })
-                .orElse(false);
+        Timer timer = timerRepository.findById(timerId)
+                .orElse(null);
+        
+        if (timer == null) {
+            log.warn("타이머 기록을 찾을 수 없습니다: {} (요청 사용자: {})", timerId, user.getEmail());
+            return false;
+        }
+        
+        // User ID로 비교 (equals 대신 ID 비교로 변경)
+        if (!timer.getUser().getId().equals(user.getId())) {
+            log.warn("타이머 삭제 권한 없음: {} (타이머 소유자: {}, 요청 사용자: {})", 
+                    timerId, timer.getUser().getId(), user.getId());
+            return false;
+        }
+        
+        // 학습목표가 연결된 경우 진행도 차감
+        if (timer.getStudyGoal() != null) {
+            StudyGoal studyGoal = timer.getStudyGoal();
+            int studyMinutes = timer.getStudyTime() / 60;
+            double hoursToDeduct = studyMinutes / 60.0; // 소수점 포함 계산
+            
+            if (hoursToDeduct > 0) {
+                double newHours = Math.max(0.0, studyGoal.getCurrentHours() - hoursToDeduct);
+                studyGoal.setCurrentHours((int) Math.round(newHours)); // 반올림 처리
+            }
+            studyGoal.setCurrentSessions(Math.max(0, studyGoal.getCurrentSessions() - 1));
+            
+            studyGoalRepository.save(studyGoal);
+            log.info("타이머 기록 삭제로 학습목표 진행도 차감: {} ({}시간, 1세션)", 
+                    studyGoal.getTitle(), hoursToDeduct);
+        }
+        
+        timerRepository.delete(timer);
+        log.info("타이머 기록 삭제 성공: {} (사용자: {})", timerId, user.getEmail());
+        return true;
     }
     
     // 사용자의 오늘 학습시간 조회
     public int getTodayStudyTime(User user) {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
         
         List<Timer> todayTimers = timerRepository.findByUserAndStartTimeBetween(user, startOfDay, endOfDay);
+        
         return todayTimers.stream()
                 .mapToInt(Timer::getStudyTime)
                 .sum() / 60; // 초 -> 분 변환
@@ -116,10 +129,11 @@ public class TimerService {
     public int getWeekStudyTime(User user) {
         LocalDate today = LocalDate.now();
         LocalDate startOfWeek = today.minusDays(today.getDayOfWeek().getValue() - 1);
-        LocalDateTime startOfWeekTime = startOfWeek.atStartOfDay();
-        LocalDateTime endOfWeekTime = LocalDate.now().atTime(23, 59, 59);
+        LocalDateTime startOfWeekDateTime = startOfWeek.atStartOfDay();
+        LocalDateTime endOfToday = today.atTime(23, 59, 59);
         
-        List<Timer> weekTimers = timerRepository.findByUserAndStartTimeBetween(user, startOfWeekTime, endOfWeekTime);
+        List<Timer> weekTimers = timerRepository.findByUserAndStartTimeBetween(user, startOfWeekDateTime, endOfToday);
+        
         return weekTimers.stream()
                 .mapToInt(Timer::getStudyTime)
                 .sum() / 60; // 초 -> 분 변환
