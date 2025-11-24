@@ -53,4 +53,18 @@ public interface TimerRepository extends JpaRepository<Timer, Long> {
     
     // 사용자의 학습목표별 타이머 세션 수 카운트
     int countByUserAndStudyGoal(User user, StudyGoal studyGoal);
+    
+    // === 집계 쿼리 (성능 최적화) ===
+    
+    // 사용자의 총 학습시간 합계 (초 단위)
+    @Query("SELECT COALESCE(SUM(t.studyTime), 0) FROM Timer t WHERE t.user = :user")
+    int sumStudyTimeByUser(@Param("user") User user);
+    
+    // 사용자의 최장 학습 세션 시간 (초 단위)
+    @Query("SELECT COALESCE(MAX(t.studyTime), 0) FROM Timer t WHERE t.user = :user")
+    int maxStudyTimeByUser(@Param("user") User user);
+    
+    // 사용자의 평균 학습 세션 시간 (초 단위)
+    @Query("SELECT COALESCE(AVG(t.studyTime), 0) FROM Timer t WHERE t.user = :user")
+    double avgStudyTimeByUser(@Param("user") User user);
 }
