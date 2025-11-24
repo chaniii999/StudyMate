@@ -10,7 +10,7 @@ import studyMate.dto.TokenDto;
 import studyMate.exception.InvalidTokenException;
 import studyMate.repository.UserRepository;
 
-import java.util.UUID;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -26,6 +26,7 @@ public class AuthService {
 
     private static final long CODE_TTL_MINUTES = 3; // 인증코드 유효 시간 (3분)
     private static final long VERIFIED_TTL_MINUTES = 30; // 인증완료 상태 유효 시간 (30분)
+    private static final SecureRandom secureRandom = new SecureRandom(); // 보안 강화된 랜덤 생성기
 
     private boolean isValidEmail(String email) {
         boolean formatOk = isValidEmailFormat(email);
@@ -33,21 +34,25 @@ public class AuthService {
         return formatOk && notExists;
     }
 
-    // 이메일 인증 코드 발송
+    // 이메일 인증 코드 발송 (보안 강화: SecureRandom 사용)
     public void sendCode(String email) {
         if (!isValidEmail(email)) {
             throw new IllegalArgumentException("유효하지 않은 이메일 형식이거나 중복된 이메일입니다.");
         }
 
-        String code = UUID.randomUUID().toString().substring(0, 6); // 랜덤 6자리 코드
+        // SecureRandom을 사용한 6자리 숫자 코드 생성 (보안 강화)
+        int code = 100000 + secureRandom.nextInt(900000); // 100000 ~ 999999
+        String codeString = String.valueOf(code);
+        
         // Redis에 인증 코드 저장 (TTL 설정)
-        redisTemplate.opsForValue().set("email:code:" + email, code, CODE_TTL_MINUTES, TimeUnit.MINUTES);
-        log.info("이메일 인증 코드 생성: {} -> {}", email, code);
+        redisTemplate.opsForValue().set("email:code:" + email, codeString, CODE_TTL_MINUTES, TimeUnit.MINUTES);
+        log.info("이메일 인증 코드 생성: {} -> {}", email, codeString);
+        
         // 이메일 전송
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("[StudyMate] 이메일 인증 코드");
-        message.setText("인증 코드: " + code + "\n이 코드는 " + CODE_TTL_MINUTES + "분 동안 유효합니다.");
+        message.setText("인증 코드: " + codeString + "\n이 코드는 " + CODE_TTL_MINUTES + "분 동안 유효합니다.");
         mailSender.send(message);
     }
 
