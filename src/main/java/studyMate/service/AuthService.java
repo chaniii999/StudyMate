@@ -81,7 +81,7 @@ public class AuthService {
     public TokenDto refreshToken(String refreshToken) {
         // 리프레시 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new InvalidTokenException("Invalid refresh token");
+            throw new InvalidTokenException("유효하지 않은 리프레시 토큰입니다.");
         }
 
         // 리프레시 토큰에서 사용자 이메일 추출
@@ -90,7 +90,7 @@ public class AuthService {
         // Redis에서 저장된 리프레시 토큰 확인
         String savedRefreshToken = redisService.getRefreshToken(email);
         if (savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
-            throw new InvalidTokenException("Refresh token not found or not matched");
+            throw new InvalidTokenException("리프레시 토큰이 일치하지 않거나, 존재하지 않습니다.");
         }
 
         // 새로운 액세스 토큰 발급
