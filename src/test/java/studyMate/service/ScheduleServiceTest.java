@@ -11,6 +11,8 @@ import studyMate.dto.schedule.ScheduleRequest;
 import studyMate.dto.schedule.ScheduleResponse;
 import studyMate.entity.Schedule;
 import studyMate.entity.User;
+import studyMate.exception.AccessDeniedException;
+import studyMate.exception.ScheduleNotFoundException;
 import studyMate.repository.ScheduleRepository;
 import studyMate.repository.StudyTopicRepository;
 
@@ -105,11 +107,11 @@ class ScheduleServiceTest {
         when(scheduleRepository.findById("nonexistent")).thenReturn(Optional.empty());
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        ScheduleNotFoundException exception = assertThrows(ScheduleNotFoundException.class, () -> {
             scheduleService.getSchedule(user, "nonexistent");
         });
 
-        assertTrue(exception.getMessage().contains("스케줄을 찾을 수 없습니다"));
+        assertTrue(exception.getMessage().contains("스케줄") && exception.getMessage().contains("nonexistent"));
     }
 
     @Test
@@ -119,11 +121,11 @@ class ScheduleServiceTest {
         when(scheduleRepository.findById("schedule1")).thenReturn(Optional.of(schedule));
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> {
             scheduleService.getSchedule(otherUser, "schedule1");
         });
 
-        assertTrue(exception.getMessage().contains("권한이 없습니다"));
+        assertTrue(exception.getMessage().contains("권한") || exception.getMessage().contains("스케줄"));
     }
 
     @Test
@@ -153,11 +155,11 @@ class ScheduleServiceTest {
         when(scheduleRepository.findById("schedule1")).thenReturn(Optional.of(schedule));
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> {
             scheduleService.updateSchedule(otherUser, "schedule1", updateRequest);
         });
 
-        assertTrue(exception.getMessage().contains("권한이 없습니다"));
+        assertTrue(exception.getMessage().contains("권한") || exception.getMessage().contains("스케줄"));
     }
 
     @Test
@@ -182,11 +184,11 @@ class ScheduleServiceTest {
         when(scheduleRepository.findById("schedule1")).thenReturn(Optional.of(schedule));
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> {
             scheduleService.deleteSchedule(otherUser, "schedule1");
         });
 
-        assertTrue(exception.getMessage().contains("권한이 없습니다"));
+        assertTrue(exception.getMessage().contains("권한") || exception.getMessage().contains("스케줄"));
         verify(scheduleRepository, never()).delete(any());
     }
 }

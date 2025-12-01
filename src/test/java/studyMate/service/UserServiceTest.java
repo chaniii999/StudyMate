@@ -12,6 +12,8 @@ import studyMate.dto.auth.LoginResponseDto;
 import studyMate.dto.auth.SignInReq;
 import studyMate.dto.auth.SignUpReqDto;
 import studyMate.entity.User;
+import studyMate.exception.EmailAlreadyExistsException;
+import studyMate.exception.EmailNotVerifiedException;
 import studyMate.repository.UserRepository;
 
 import java.util.Optional;
@@ -75,6 +77,7 @@ class UserServiceTest {
     @DisplayName("회원가입 성공")
     void registerUser_Success() {
         // Given
+        when(userRepository.existsByEmail(signUpReqDto.getEmail())).thenReturn(false);
         when(authService.isEmailVerified(signUpReqDto.getEmail())).thenReturn(true);
         when(passwordEncoder.encode(signUpReqDto.getPassword())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -83,23 +86,43 @@ class UserServiceTest {
         userService.registerUser(signUpReqDto);
 
         // Then
+        verify(userRepository, times(1)).existsByEmail(signUpReqDto.getEmail());
         verify(authService, times(1)).isEmailVerified(signUpReqDto.getEmail());
         verify(passwordEncoder, times(1)).encode(signUpReqDto.getPassword());
         verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
+    @DisplayName("이메일 중복 시 회원가입 실패")
+    void registerUser_EmailAlreadyExists_ThrowsException() {
+        // Given
+        when(userRepository.existsByEmail(signUpReqDto.getEmail())).thenReturn(true);
+
+        // When & Then
+        EmailAlreadyExistsException exception = assertThrows(EmailAlreadyExistsException.class, () -> {
+            userService.registerUser(signUpReqDto);
+        });
+
+        assertTrue(exception.getMessage().contains("이미 사용 중인 이메일입니다"));
+        assertTrue(exception.getMessage().contains(signUpReqDto.getEmail()));
+        verify(userRepository, never()).save(any(User.class));
+        verify(authService, never()).isEmailVerified(anyString());
+    }
+
+    @Test
     @DisplayName("이메일 인증 미완료 시 회원가입 실패")
     void registerUser_EmailNotVerified_ThrowsException() {
         // Given
+        when(userRepository.existsByEmail(signUpReqDto.getEmail())).thenReturn(false);
         when(authService.isEmailVerified(signUpReqDto.getEmail())).thenReturn(false);
 
         // When & Then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        EmailNotVerifiedException exception = assertThrows(EmailNotVerifiedException.class, () -> {
             userService.registerUser(signUpReqDto);
         });
 
         assertTrue(exception.getMessage().contains("이메일 인증이 완료되지 않았습니다"));
+        assertTrue(exception.getMessage().contains(signUpReqDto.getEmail()));
         verify(userRepository, never()).save(any(User.class));
     }
 

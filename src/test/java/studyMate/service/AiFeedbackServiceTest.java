@@ -12,6 +12,9 @@ import studyMate.dto.ai.AiFeedbackRequest;
 import studyMate.dto.ai.AiFeedbackResponse;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.RateLimitExceededException;
+import studyMate.exception.StudyTimeTooShortException;
+import studyMate.exception.TimerNotFoundException;
 import studyMate.repository.TimerRepository;
 
 import java.time.LocalDateTime;
@@ -76,29 +79,32 @@ class AiFeedbackServiceTest {
         when(timerRepository.findById(1L)).thenReturn(Optional.empty());
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        TimerNotFoundException exception = assertThrows(TimerNotFoundException.class, () -> {
             aiFeedbackService.getFeedback(request);
         });
 
-        assertTrue(exception.getMessage().contains("Timer not found"));
+        assertTrue(exception.getMessage().contains("타이머") && exception.getMessage().contains("1"));
         verify(timerRepository, times(1)).findById(1L);
         verify(rateLimiterService, never()).canMakeRequest();
     }
 
     @Test
-    @DisplayName("학습 시간이 3분(180초) 미만이면 예외 발생")
-    void getFeedback_StudyTimeLessThan3Minutes_ThrowsException() {
+    @DisplayName("학습 시간이 2분(120초) 미만이면 예외 발생")
+    void getFeedback_StudyTimeLessThan2Minutes_ThrowsException() {
         // Given
-        timer.setStudyTime(100); // 100초 (3분 미만)
+        timer.setStudyTime(100); // 100초 (2분 미만)
         when(timerRepository.findById(1L)).thenReturn(Optional.of(timer));
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        StudyTimeTooShortException exception = assertThrows(StudyTimeTooShortException.class, () -> {
             aiFeedbackService.getFeedback(request);
         });
 
-        assertTrue(exception.getMessage().contains("3분 미만"));
+        assertTrue(exception.getMessage().contains("학습 시간이 너무 짧습니다"));
+        assertTrue(exception.getMessage().contains("100초") || exception.getMessage().contains("1분"));
+        assertTrue(exception.getMessage().contains("120초") || exception.getMessage().contains("2분"));
         verify(timerRepository, times(1)).findById(1L);
+        verify(rateLimiterService, never()).canMakeRequest();
     }
 
     @Test
@@ -107,13 +113,16 @@ class AiFeedbackServiceTest {
         // Given
         when(timerRepository.findById(1L)).thenReturn(Optional.of(timer));
         when(rateLimiterService.canMakeRequest()).thenReturn(false);
+        when(rateLimiterService.getCurrentRequestCount()).thenReturn(20);
+        when(rateLimiterService.getMaxRequestsPerMinute()).thenReturn(20);
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        RateLimitExceededException exception = assertThrows(RateLimitExceededException.class, () -> {
             aiFeedbackService.getFeedback(request);
         });
 
-        assertTrue(exception.getMessage().contains("사용량이 초과"));
+        assertTrue(exception.getMessage().contains("사용량") || exception.getMessage().contains("초과") || 
+                   exception.getMessage().contains("Rate limit"));
         verify(rateLimiterService, times(1)).canMakeRequest();
     }
 

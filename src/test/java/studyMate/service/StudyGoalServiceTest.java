@@ -12,6 +12,7 @@ import studyMate.dto.studygoal.StudyGoalResponse;
 import studyMate.entity.GoalStatus;
 import studyMate.entity.StudyGoal;
 import studyMate.entity.User;
+import studyMate.exception.StudyGoalNotFoundException;
 import studyMate.repository.StudyGoalRepository;
 import studyMate.repository.TimerRepository;
 
@@ -122,11 +123,11 @@ class StudyGoalServiceTest {
         when(studyGoalRepository.findByIdAndUser(999L, user)).thenReturn(Optional.empty());
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        StudyGoalNotFoundException exception = assertThrows(StudyGoalNotFoundException.class, () -> {
             studyGoalService.getStudyGoal(user, 999L);
         });
 
-        assertTrue(exception.getMessage().contains("학습목표를 찾을 수 없습니다"));
+        assertTrue(exception.getMessage().contains("학습목표") && exception.getMessage().contains("999"));
     }
 
     @Test

@@ -12,6 +12,7 @@ import studyMate.dto.pomodoro.TimerResDto;
 import studyMate.entity.StudyGoal;
 import studyMate.entity.Timer;
 import studyMate.entity.User;
+import studyMate.exception.StudyGoalNotFoundException;
 import studyMate.repository.StudyGoalRepository;
 import studyMate.repository.TimerRepository;
 
@@ -220,11 +221,11 @@ class TimerServiceTest {
         when(studyGoalRepository.findByIdAndUser(999L, user)).thenReturn(Optional.empty());
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        StudyGoalNotFoundException exception = assertThrows(StudyGoalNotFoundException.class, () -> {
             timerService.saveTimerRecord(user, timer, 999L);
         });
 
-        assertTrue(exception.getMessage().contains("학습목표를 찾을 수 없습니다"));
+        assertTrue(exception.getMessage().contains("학습목표") && exception.getMessage().contains("999"));
         verify(timerRepository, never()).save(any(Timer.class));
     }
 
@@ -317,15 +318,15 @@ class TimerServiceTest {
     @DisplayName("총 학습시간 조회")
     void getTotalStudyTime_Success() {
         // Given
-        List<Timer> allTimers = List.of(timer);
-        when(timerRepository.findByUser(user)).thenReturn(allTimers);
+        // 1800초 = 30분이므로, sumStudyTimeByUser는 1800을 반환하고, 이를 60으로 나누면 30분
+        when(timerRepository.sumStudyTimeByUser(user)).thenReturn(1800);
 
         // When
         int totalTime = timerService.getTotalStudyTime(user);
 
         // Then
-        assertEquals(30, totalTime);
-        verify(timerRepository, times(1)).findByUser(user);
+        assertEquals(30, totalTime); // 1800초 / 60 = 30분
+        verify(timerRepository, times(1)).sumStudyTimeByUser(user);
     }
 
     @Test
@@ -346,47 +347,45 @@ class TimerServiceTest {
     @DisplayName("평균 세션 시간 조회")
     void getAverageSessionTime_Success() {
         // Given
-        Timer timer2 = Timer.builder()
-                .studyTime(1200) // 20분
-                .build();
-        List<Timer> timers = List.of(timer, timer2);
-        when(timerRepository.findByUser(user)).thenReturn(timers);
+        // 1800초(30분)와 1200초(20분)의 평균 = 1500초, 이를 60으로 나누면 25분
+        when(timerRepository.avgStudyTimeByUser(user)).thenReturn(1500.0);
 
         // When
         double average = timerService.getAverageSessionTime(user);
 
         // Then
-        assertEquals(25.0, average); // (30 + 20) / 2 = 25분
+        assertEquals(25.0, average, 0.01); // 1500초 / 60 = 25분 (소수점 오차 허용)
+        verify(timerRepository, times(1)).avgStudyTimeByUser(user);
     }
 
     @Test
     @DisplayName("기록이 없을 때 평균 세션 시간은 0")
     void getAverageSessionTime_NoRecords_ReturnsZero() {
         // Given
-        when(timerRepository.findByUser(user)).thenReturn(List.of());
+        // avgStudyTimeByUser는 DB 집계 쿼리이므로 기록이 없으면 0.0을 반환
+        when(timerRepository.avgStudyTimeByUser(user)).thenReturn(0.0);
 
         // When
         double average = timerService.getAverageSessionTime(user);
 
         // Then
         assertEquals(0.0, average);
+        verify(timerRepository, times(1)).avgStudyTimeByUser(user);
     }
 
     @Test
     @DisplayName("최장 세션 시간 조회")
     void getLongestSessionTime_Success() {
         // Given
-        Timer timer2 = Timer.builder()
-                .studyTime(3600) // 60분
-                .build();
-        List<Timer> timers = List.of(timer, timer2);
-        when(timerRepository.findByUser(user)).thenReturn(timers);
+        // 3600초 = 60분이므로, maxStudyTimeByUser는 3600을 반환하고, 이를 60으로 나누면 60분
+        when(timerRepository.maxStudyTimeByUser(user)).thenReturn(3600);
 
         // When
         int longest = timerService.getLongestSessionTime(user);
 
         // Then
-        assertEquals(60, longest);
+        assertEquals(60, longest); // 3600초 / 60 = 60분
+        verify(timerRepository, times(1)).maxStudyTimeByUser(user);
     }
 
     @Test
@@ -396,14 +395,15 @@ class TimerServiceTest {
         timer.setStudyGoal(studyGoal);
         List<Timer> goalTimers = List.of(timer);
         when(studyGoalRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(studyGoal));
-        when(timerRepository.findByUserAndStudyGoal(user, studyGoal)).thenReturn(goalTimers);
+        when(timerRepository.findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal)).thenReturn(goalTimers);
 
         // When
         int studyTime = timerService.getStudyTimeByGoal(user, 1L);
 
         // Then
-        assertEquals(30, studyTime);
+        assertEquals(30, studyTime); // 1800초 / 60 = 30분
         verify(studyGoalRepository, times(1)).findByIdAndUser(1L, user);
+        verify(timerRepository, times(1)).findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal);
     }
 
     @Test
@@ -493,7 +493,7 @@ class TimerServiceTest {
         // Given
         List<Timer> timers = List.of(timer);
         when(studyGoalRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(studyGoal));
-        when(timerRepository.findByUserAndStudyGoal(user, studyGoal)).thenReturn(timers);
+        when(timerRepository.findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal)).thenReturn(timers);
 
         // When
         List<Timer> result = timerService.getTimerHistoryByStudyGoal(user, 1L);
@@ -502,6 +502,7 @@ class TimerServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         verify(studyGoalRepository, times(1)).findByIdAndUser(1L, user);
+        verify(timerRepository, times(1)).findByUserAndStudyGoalOrderByCreatedAtDesc(user, studyGoal);
     }
 
     @Test
@@ -511,10 +512,10 @@ class TimerServiceTest {
         when(studyGoalRepository.findByIdAndUser(999L, user)).thenReturn(Optional.empty());
 
         // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        StudyGoalNotFoundException exception = assertThrows(StudyGoalNotFoundException.class, () -> {
             timerService.getTimerHistoryByStudyGoal(user, 999L);
         });
 
-        assertTrue(exception.getMessage().contains("학습목표를 찾을 수 없습니다"));
+        assertTrue(exception.getMessage().contains("학습목표") && exception.getMessage().contains("999"));
     }
 }
